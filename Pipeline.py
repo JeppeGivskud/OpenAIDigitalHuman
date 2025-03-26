@@ -9,12 +9,13 @@ def create_pipeline(agent: Agent):
 
 
 async def run_pipeline(pipeline):
-    """Runs the voice pipeline with recorded audio."""
-    buffer = record_audio()
-    audio_input = AudioInput(buffer=buffer)
-    result = await pipeline.run(audio_input)
+    while True:
+        """Runs the voice pipeline with recorded audio."""
+        buffer = record_audio()
+        audio_input = AudioInput(buffer=buffer)
+        result = await pipeline.run(audio_input)
 
-    # Stream the result
-    async for event in result.stream():
-        if event.type == "voice_stream_event_audio":
-            play_audio(event.data)
+        # Stream the result
+        async for event in result.stream():
+            if event.type == "voice_stream_event_audio":
+                play_audio(event.data)
