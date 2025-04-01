@@ -4,6 +4,8 @@ We'll be doing AI stuff in here
 
 The code is based on https://openai.github.io/openai-agents-python/voice/quickstart/
 
+# setup
+
 Man skal have installeret
 - [ ] GIT https://git-scm.com/downloads
 - [ ] Python
