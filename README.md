@@ -2,6 +2,8 @@ Documenting the 10'th semester project (THE MASTER PROJECT)
 
 We'll be doing AI stuff in here
 
+The code is based on https://openai.github.io/openai-agents-python/voice/quickstart/
+
 Man skal have installeret
 - [ ] GIT https://git-scm.com/downloads
 - [ ] Python
