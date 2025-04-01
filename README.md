@@ -9,13 +9,20 @@ git clone https://github.com/JeppeGivskud/OpenAIDigitalHuman.git
 cd OpenAIDigitalHuman
 ```
 
-3) Lav virtuelt miljø så du nemt kan slette alting igen
+3) Lav virtuelt miljø så du nemt kan slette alting igen https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/
 4) Installer ting og sager
 ```
-python3.8 -m venv env
-source env/bin/activate
-python install .
+python -m venv env
+source env/Scripts/activate
+```
+
+Hvis alt er gået godt og der står (env) foran din terminal
+```
+pip install openai-agents[voice]
+pip install sounddevice
 ```
 
 5) Få fat i en OpenAPI nøgle (hold den hemmelig for guds skyld)
 6) https://platform.openai.com/docs/libraries?desktop-os=macOS#create-and-export-an-api-key
+
+Nu burde du kunne køre main.py
