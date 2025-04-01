@@ -3,8 +3,8 @@ Documenting the 10'th semester project (THE MASTER PROJECT)
 We'll be doing AI stuff in here
 
 Man skal have installeret
+- [ ] GIT https://git-scm.com/downloads
 - [ ] Python
-- [ ] pip
 - [ ] virtuel envionment https://www.freecodecamp.org/news/how-to-setup-virtual-environments-in-python/
 
 1) Åben en mappe i vscode hvor du gerne vil have projektet
