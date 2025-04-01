@@ -19,3 +19,6 @@ async def run_pipeline(pipeline):
         async for event in result.stream():
             if event.type == "voice_stream_event_audio":
                 play_audio(event.data)
+
+        # Wait for user input to continue
+        input("Press Enter to run the pipeline again...")
