@@ -27,8 +27,14 @@ source env/Scripts/activate
 
 Hvis alt er gået godt og der står (env) foran din terminal
 ```
+python.exe -m pip install --upgrade pip
 pip install openai-agents[voice]
-pip install sounddevice
+pip install sounddevice==0.4.2
+pip install scipy
+pip install grpcio==1.51.3
+pip install numpy==2.2.0
+pip install protobuf==3.17.3
+pip install soundfile
 ```
 
 5) Få fat i en OpenAPI nøgle (hold den hemmelig for guds skyld)
