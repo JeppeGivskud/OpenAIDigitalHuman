@@ -1,6 +1,5 @@
 import numpy as np
 import sounddevice as sd
-from agents.voice import AudioInput
 
 
 def record_audio(samplerate=24000, duration=3, channels=1):
