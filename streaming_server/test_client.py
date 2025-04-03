@@ -67,12 +67,10 @@ def push_audio_track_stream(url, audio_data, samplerate, instance_name):
     All messages are packed into a Python generator and passed to PushAudioStream()
     """
 
-    chunk_size = samplerate // 10  # ADJUST
-    sleep_between_chunks = 0.04  # ADJUST
     block_until_playback_is_finished = True  # ADJUST
 
     with grpc.insecure_channel(url) as channel:
-        print("Channel creadted")
+        # print("Channel created")
         stub = audio2face_pb2_grpc.Audio2FaceStub(channel)
 
         def make_generator():
@@ -84,21 +82,23 @@ def push_audio_track_stream(url, audio_data, samplerate, instance_name):
             # At first, we send a message with start_marker
             yield audio2face_pb2.PushAudioStreamRequest(start_marker=start_marker)
             # Then we send messages with audio_data
-            for i in range(len(audio_data) // chunk_size + 1):
-                time.sleep(sleep_between_chunks)
+            yield audio2face_pb2.PushAudioStreamRequest(
+                audio_data=audio_data.astype(np.float32).tobytes()
+            )
+            """ for i in range(len(audio_data) // chunk_size + 1):
                 chunk = audio_data[i * chunk_size : i * chunk_size + chunk_size]
                 yield audio2face_pb2.PushAudioStreamRequest(
                     audio_data=chunk.astype(np.float32).tobytes()
-                )
+                ) """
 
         request_generator = make_generator()
-        print("Sending audio data...")
-        response = stub.PushAudioStream(request_generator)
-        if response.success:
+        # print("Sending audio data...")
+        stub.PushAudioStream(request_generator)
+        """ if response.success:
             print("SUCCESS")
         else:
             print(f"ERROR: {response.message}")
-    print("Channel closed")
+    print("Channel closed") """
 
 
 def main():
@@ -117,9 +117,6 @@ def main():
         print("Format: python test_client.py PATH_TO_WAV INSTANCE_NAME")
         return
 
-    # Sleep time emulates long latency of the request
-    sleep_time = 2.0  # ADJUST
-
     # URL of the Audio2Face Streaming Audio Player server (where A2F App is running)
     url = "localhost:50051"  # ADJUST
 
@@ -134,9 +131,6 @@ def main():
     # Only Mono audio is supported
     if len(data.shape) > 1:
         data = np.average(data, axis=1)
-
-    print(f"Sleeping for {sleep_time} seconds")
-    time.sleep(sleep_time)
 
     # Emulate audio stream and push audio chunks sequentially
     push_audio_track_stream(url, data, samplerate, instance_name)
