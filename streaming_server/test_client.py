@@ -8,9 +8,11 @@ But in a real application such stream of chunks may be acquired from some other 
  * streaming audio via internet, streaming Text-To-Speech, etc
 gRPC protocol details could be find in audio2face.proto
 """
-#.\env\Scripts\Activate.ps1
-#C:\Users\Jeppe\AppData\Local\Programs\Python\Python311\python.exe test_client.py testrec.wav /World/audio2face/PlayerStreaming
-#C:\Users\Jeppe\AppData\Local\Programs\Python\Python311\python.exe streaming_server/test_client.py streaming_server/testrec.wav /World/audio2face/PlayerStreaming
+
+# .\env\Scripts\Activate.ps1
+# C:\Users\Jeppe\AppData\Local\Programs\Python\Python311\python.exe test_client.py testrec.wav /World/audio2face/PlayerStreaming
+# C:\Users\Jeppe\AppData\Local\Programs\Python\Python311\python.exe streaming_server/test_client.py streaming_server/testrec.wav /World/audio2face/PlayerStreaming
+# python streaming_server/test_client.py streaming_server/testrec.wav /World/audio2face/PlayerStreaming
 import sys
 import time
 
@@ -50,6 +52,7 @@ def push_audio_track(url, audio_data, samplerate, instance_name):
     print("Closed channel")
 """
 
+
 def push_audio_track_stream(url, audio_data, samplerate, instance_name):
     """
     This function pushes audio chunks sequentially via PushAudioStreamRequest()
@@ -84,7 +87,9 @@ def push_audio_track_stream(url, audio_data, samplerate, instance_name):
             for i in range(len(audio_data) // chunk_size + 1):
                 time.sleep(sleep_between_chunks)
                 chunk = audio_data[i * chunk_size : i * chunk_size + chunk_size]
-                yield audio2face_pb2.PushAudioStreamRequest(audio_data=chunk.astype(np.float32).tobytes())
+                yield audio2face_pb2.PushAudioStreamRequest(
+                    audio_data=chunk.astype(np.float32).tobytes()
+                )
 
         request_generator = make_generator()
         print("Sending audio data...")
