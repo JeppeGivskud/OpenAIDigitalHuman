@@ -18,6 +18,44 @@ def record_audio(samplerate=24000, duration=3, channels=1):
     return recording.flatten()
 
 
+def play_audio(audio_data, samplerate=24000, channels=1):
+    """Plays back audio data."""
+    player = sd.OutputStream(samplerate=samplerate, channels=channels, dtype=np.int16)
+    player.start()
+    player.write(audio_data)
+
+
+def record_audio_while_pressed(samplerate=24000, channels=1):
+    import keyboard
+
+    """
+    Records an audio clip as long as a button is pressed and returns it as a NumPy array.
+
+    Parameters:
+        samplerate (int): The sampling rate for the audio.
+        channels (int): The number of audio channels.
+
+    Returns:
+        np.ndarray: The recorded audio as a NumPy array.
+    """
+
+    # Create a buffer to store the recorded audio
+    recorded_audio = []
+
+    # Start the input stream
+    with sd.InputStream(
+        samplerate=samplerate, channels=channels, dtype=np.int16
+    ) as stream:
+
+        while not (keyboard.is_pressed("space")):
+            # Read audio data from the stream
+            audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
+            recorded_audio.append(audio_chunk)
+
+    # Combine all chunks into a single NumPy array
+    return np.concatenate(recorded_audio).flatten()
+
+
 def send_audio_to_audio2face_server(
     audio_data,
     samplerate=24000,
@@ -39,13 +77,6 @@ def send_audio_to_audio2face_server(
 
     # Use the function from test_client.py
     push_audio_track_stream(url, audio_data, samplerate, instance_name)
-
-
-def play_audio(audio_data, samplerate=24000, channels=1):
-    """Plays back audio data."""
-    player = sd.OutputStream(samplerate=samplerate, channels=channels, dtype=np.int16)
-    player.start()
-    player.write(audio_data)
 
 
 async def handle_audio_stream(
@@ -76,3 +107,6 @@ async def handle_audio_stream(
                     instance_name=instance_name,
                     url=url,
                 )
+            else:
+                # Play the audio locally
+                play_audio(event.data)
