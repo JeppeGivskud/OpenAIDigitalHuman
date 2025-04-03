@@ -8,7 +8,9 @@ But in a real application such stream of chunks may be acquired from some other 
  * streaming audio via internet, streaming Text-To-Speech, etc
 gRPC protocol details could be find in audio2face.proto
 """
+#.\env\Scripts\Activate.ps1
 #C:\Users\Jeppe\AppData\Local\Programs\Python\Python311\python.exe test_client.py testrec.wav /World/audio2face/PlayerStreaming
+#C:\Users\Jeppe\AppData\Local\Programs\Python\Python311\python.exe streaming_server/test_client.py streaming_server/testrec.wav /World/audio2face/PlayerStreaming
 import sys
 import time
 
