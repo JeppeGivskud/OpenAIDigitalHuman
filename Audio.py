@@ -48,12 +48,16 @@ def play_audio(audio_data, samplerate=24000, channels=1):
     player.write(audio_data)
 
 
+import numpy as np
+
+
 async def handle_audio_stream(
     result,
     send_audio=False,
     instance_name="/World/audio2face/PlayerStreaming",
     url="localhost:50051",
-    buffer_size=100000,
+    min_duration=2.0,  # Minimum duration (in seconds) for a package to be processed
+    sample_rate=24000,
 ):
     """
     Handles streaming audio events, buffers small chunks, and optionally sends them to the Audio2Face server.
@@ -63,37 +67,45 @@ async def handle_audio_stream(
         send_audio (bool): Whether to send the audio to the Audio2Face server.
         instance_name (str): The instance name for the Audio2Face server.
         url (str): The URL of the Audio2Face server.
-        buffer_size (int): The size of the buffer in samples.
+        min_duration (float): Minimum duration (in seconds) for a package to be processed.
+        sample_rate (int): The sample rate of the audio.
     """
     buffer = []  # Temporary storage for audio chunks
+    min_samples = int(
+        min_duration * sample_rate
+    )  # Minimum number of samples for processing
+
     async for event in result.stream():
         if event.type == "voice_stream_event_audio":
             # Append the new chunk to the buffer
+            print("new packet", len(event.type))
             buffer.append(event.data)
 
-            # Combine chunks if the buffer size exceeds the threshold
+            # Combine all chunks in the buffer
             combined_audio = np.concatenate(buffer)
-            if len(combined_audio) >= buffer_size:
+
+            # Process the combined audio if it meets the minimum size
+            if len(combined_audio) >= min_samples:
                 if send_audio:
                     send_audio_to_audio2face_server(
-                        combined_audio[:buffer_size],  # Send only up to the buffer size
-                        samplerate=24000,
+                        combined_audio,
+                        samplerate=sample_rate,
                         instance_name=instance_name,
                         url=url,
                     )
                 else:
-                    play_audio(combined_audio[:buffer_size])
+                    play_audio(combined_audio)
 
-                # Keep the remaining audio in the buffer
-                buffer = [combined_audio[buffer_size:]]
+                # Clear the buffer after processing
+                buffer = []
 
-    # Handle any remaining audio in the buffer
+    # Handle any remaining audio in the buffer at the end of the stream
     if buffer:
         remaining_audio = np.concatenate(buffer)
         if send_audio:
             send_audio_to_audio2face_server(
                 remaining_audio,
-                samplerate=24000,
+                samplerate=sample_rate,
                 instance_name=instance_name,
                 url=url,
             )
