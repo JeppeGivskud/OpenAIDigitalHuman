@@ -32,6 +32,11 @@ def send_audio_to_audio2face_server(
     if len(audio_data.shape) > 1:
         audio_data = np.average(audio_data, axis=1)
 
+    # Convert audio data to float32 and normalize to [-1.0, 1.0]
+    if audio_data.dtype != np.float32:
+        audio_data = audio_data.astype(np.float32)
+    audio_data /= np.max(np.abs(audio_data))  # Normalize to [-1.0, 1.0]
+
     # Use the function from test_client.py
     push_audio_track_stream(url, audio_data, samplerate, instance_name)
 
@@ -61,10 +66,10 @@ async def handle_audio_stream(
     """
     async for event in result.stream():
         if event.type == "voice_stream_event_audio":
-            # Play the audio
-            play_audio(event.data)
+            # Play the audio (for testing or without audio2face)
+            # play_audio(event.data)
 
-            # Optionally send the audio to the Audio2Face server
+            # Send the audio to the Audio2Face server
             if send_audio:
                 send_audio_to_audio2face_server(
                     event.data,

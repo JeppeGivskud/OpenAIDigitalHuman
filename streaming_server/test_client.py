@@ -138,12 +138,8 @@ def main():
     print(f"Sleeping for {sleep_time} seconds")
     time.sleep(sleep_time)
 
-    if 0:  # ADJUST
-        # Push the whole audio track at once
-        push_audio_track(url, data, samplerate, instance_name)
-    else:
-        # Emulate audio stream and push audio chunks sequentially
-        push_audio_track_stream(url, data, samplerate, instance_name)
+    # Emulate audio stream and push audio chunks sequentially
+    push_audio_track_stream(url, data, samplerate, instance_name)
 
 
 if __name__ == "__main__":
