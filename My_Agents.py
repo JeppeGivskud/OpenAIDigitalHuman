@@ -1,5 +1,5 @@
 import random
-from agents import Agent, function_tool, handoff
+from agents import Agent, function_tool, handoff, ModelSettings
 from agents.extensions.handoff_prompt import prompt_with_handoff_instructions
 
 """
@@ -17,12 +17,12 @@ assistant_agent = Agent(
         "You're assisting university students with their semester projects. Offer helpful suggestions, ask relevant questions, and keep responses concise. If they ask about food, refer them to the cantina model.",
     ),
     model="gpt-4o-mini",
-    model_settings={
-        "temperature": 0.5,
-        "top_p": 0.9,
-        "max_tokens": 200,
-        "stop": ["\n"],
-    },
+    model_settings=ModelSettings(
+        temperature=0.5,
+        top_p=0.9,
+        max_tokens=200,
+        stop=["\n"]
+    ),
     handoffs=[],  # This will be updated later
     tools=[],
 )
@@ -36,12 +36,12 @@ cantina_agent = Agent(
         "Keep responses concise and friendly."
     ),
     model="gpt-4o-mini",
-    model_settings={
-        "temperature": 0.7,  # Keep responses more wild
-        "top_p": 0.8,
-        "max_tokens": 150,
-        "stop": ["\n"],
-    },
+    model_settings=(
+        temperature = 0.7,  # Keep responses more wild
+        top_p = 0.8,
+        max_tokens = 150,
+        stop = ["\n"],
+    ),
     tools=[],  # Add APIs if needed, e.g., a menu database lookup
     handoffs=[],  # No handoffs since this agent only handles cantina-related queries
 )
@@ -58,12 +58,12 @@ assistant_agent_dansk = Agent(
         "Hvis en studerende spørger om mad eller kantinen, send dem videre til kantinemodellen."
     ),
     model="gpt-4o-mini",
-    model_settings={
-        "temperature": 0.5,
-        "top_p": 0.9,
-        "max_tokens": 200,
-        "stop": ["\n"],
-    },
+    model_settings=(
+        temperature = 0.5,
+        top_p = 0.9,
+        max_tokens = 200,
+        stop = ["\n"],
+    ),
     handoffs=[],  # This will be updated later
     tools=[],
 )
@@ -77,12 +77,12 @@ cantina_agent_dansk = Agent(
         "Hold dine svar korte og venlige."
     ),
     model="gpt-4o-mini",
-    model_settings={
-        "temperature": 0.6,  # Holder svarene mere livlige
-        "top_p": 0.8,
-        "max_tokens": 150,
-        "stop": ["\n"],
-    },
+    model_settings=(
+        temperature = 0.6,  # Holder svarene mere livlige
+        top_p = 0.8,
+        max_tokens = 150,
+        stop = ["\n"],
+    ),
     tools=[],  # Kan udvides med en menu-API, hvis nødvendigt
     handoffs=[],  # Ingen viderestilling – dette er kun for kantine-relaterede emner
 )
