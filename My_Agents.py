@@ -1,45 +1,89 @@
 import random
-from agents import Agent, function_tool
+from agents import Agent, function_tool, handoff
 from agents.extensions.handoff_prompt import prompt_with_handoff_instructions
 
+"""
+Dette er et simpelt program som har 2 agenter. En til semesterprojekter og en til kantinen.
+"""
 
-@function_tool
-def get_weather(city: str) -> str:
-    """Get the weather for a given city."""
-    print(f"[debug] get_weather called with city: {city}")
-    choices = ["sunny", "cloudy", "rainy", "snowy"]
-    return f"The weather in {city} is {random.choice(choices)}."
+"""
+This is a simple program that has 2 agents. One for semester projects and one for the cantina.
+"""
 
-
+# English version of the agents
 assistant_agent = Agent(
-    name="Assistant",
+    name="Trothilde",
     instructions=prompt_with_handoff_instructions(
-        "You're speaking to a human, so be polite and concise. If the user says pizza, hand off to the Italian agent. If the user mentions they are angry, hand off to the angry agent. Say Banana after every sentence.",
+        "You're assisting university students with their semester projects. Offer helpful suggestions, ask relevant questions, and keep responses concise. If they ask about food, refer them to the cantina model.",
     ),
     model="gpt-4o-mini",
+    model_settings={
+        "temperature": 0.5,
+        "top_p": 0.9,
+        "max_tokens": 200,
+        "stop": ["\n"],
+    },
     handoffs=[],  # This will be updated later
-    tools=[get_weather],
+    tools=[],
 )
 
-italian_agent = Agent(
-    name="Italian",
-    handoff_description="An Italian-speaking agent.",
-    instructions=prompt_with_handoff_instructions(
-        "You're speaking to a human, so be polite and concise. Speak in Italian. Say pizza after every sentence. After speaking always handoff to the assistant agent.",
+cantina_agent = Agent(
+    name="CantinaBot",
+    instructions=(
+        "You are a helpful assistant for university students looking for food options in the cantina. "
+        "Provide information about available menu items, pricing, and daily specials. "
+        "If a student asks for recommendations, suggest popular or well-balanced meals. "
+        "Keep responses concise and friendly."
     ),
-    handoffs=[assistant_agent],
     model="gpt-4o-mini",
+    model_settings={
+        "temperature": 0.7,  # Keep responses more wild
+        "top_p": 0.8,
+        "max_tokens": 150,
+        "stop": ["\n"],
+    },
+    tools=[],  # Add APIs if needed, e.g., a menu database lookup
+    handoffs=[],  # No handoffs since this agent only handles cantina-related queries
 )
 
-angry_agent = Agent(
-    name="Angry",
-    handoff_description="An angry-speaking agent.",
+assistant_agent.handoffs = [cantina_agent]
+
+
+# Danish version of the agents
+assistant_agent_dansk = Agent(
+    name="Trothilde",
     instructions=prompt_with_handoff_instructions(
-        "You're speaking to a human, but you are very angry so you should just answer them short and snappy. Say fishsticks after every sentence. If the user isn't angry handoff to the assistant agent.",
+        "Du hjælper universitetsstuderende med deres semesterprojekter. "
+        "Stil relevante spørgsmål, giv nyttige forslag og hold dine svar korte og venlige. "
+        "Hvis en studerende spørger om mad eller kantinen, send dem videre til kantinemodellen."
     ),
-    handoffs=[assistant_agent],
     model="gpt-4o-mini",
+    model_settings={
+        "temperature": 0.5,
+        "top_p": 0.9,
+        "max_tokens": 200,
+        "stop": ["\n"],
+    },
+    handoffs=[],  # This will be updated later
+    tools=[],
 )
 
-# Update the handoffs for assistant_agent now that italian_agent and angry_agent are defined
-assistant_agent.handoffs = [angry_agent, italian_agent]
+cantina_agent_dansk = Agent(
+    name="KantineBot",
+    instructions=(
+        "Du hjælper universitetsstuderende med at finde information om kantinens menu. "
+        "Giv oplysninger om dagens retter, priser og eventuelle tilbud. "
+        "Hvis en studerende spørger om mad i kantinen, foreslå populære eller sunde måltider. "
+        "Hold dine svar korte og venlige."
+    ),
+    model="gpt-4o-mini",
+    model_settings={
+        "temperature": 0.6,  # Holder svarene mere livlige
+        "top_p": 0.8,
+        "max_tokens": 150,
+        "stop": ["\n"],
+    },
+    tools=[],  # Kan udvides med en menu-API, hvis nødvendigt
+    handoffs=[],  # Ingen viderestilling – dette er kun for kantine-relaterede emner
+)
+assistant_agent_dansk.handoffs = [cantina_agent_dansk]

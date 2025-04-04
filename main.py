@@ -1,10 +1,10 @@
 import asyncio
-from My_Agents import assistant_agent
+from My_Agents import assistant_agent_dansk
 from Pipeline import create_pipeline, run_pipeline
 
 
 async def main():
-    pipeline = create_pipeline(assistant_agent)
+    pipeline = create_pipeline(assistant_agent_dansk)
     await run_pipeline(pipeline)
 
 
