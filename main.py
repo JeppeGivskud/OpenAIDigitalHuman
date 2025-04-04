@@ -5,7 +5,7 @@ from Pipeline import create_pipeline, run_pipeline
 
 async def main():
     pipeline = create_pipeline(Trothilde_dk_agent)
-    await run_pipeline(pipeline)
+    await run_pipeline(pipeline, omniverse=True)
 
 
 if __name__ == "__main__":

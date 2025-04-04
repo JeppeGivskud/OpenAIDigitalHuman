@@ -6,6 +6,7 @@ The code is based on https://openai.github.io/openai-agents-python/voice/quickst
 - openai-agents[voice]'
 - soundfile
 - sounddevice==0.4.2
+- keyboard
 
 The audio2face-3d is based on the streaming guide for omniverse audio2face-3d from https://docs.omniverse.nvidia.com/audio2face/latest/user-manual/audio2face-tool/streaming-audio-player.html
 
@@ -62,6 +63,7 @@ pip install grpcio==1.51.3
 pip install numpy==2.2.0
 pip install protobuf==3.17.3
 pip install soundfile
+pip install keyboard
 ```
 
 6) Get an OpenAPI key and export it into your path (DO NOT SHARE THIS KEY) https://platform.openai.com/docs/libraries?desktop-os=macOS#create-and-export-an-api-key

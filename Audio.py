@@ -4,6 +4,37 @@ import soundfile
 from streaming_server.test_client import push_audio_track_stream
 
 
+def record_audio_while_pressed(samplerate=24000, channels=1):
+    import keyboard
+
+    """
+    Records an audio clip as long as a button is pressed and returns it as a NumPy array.
+
+    Parameters:
+        samplerate (int): The sampling rate for the audio.
+        channels (int): The number of audio channels.
+
+    Returns:
+        np.ndarray: The recorded audio as a NumPy array.
+    """
+
+    # Create a buffer to store the recorded audio
+    recorded_audio = []
+
+    # Start the input stream
+    with sd.InputStream(
+        samplerate=samplerate, channels=channels, dtype=np.int16
+    ) as stream:
+
+        while not (keyboard.is_pressed("space")):
+            # Read audio data from the stream
+            audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
+            recorded_audio.append(audio_chunk)
+
+    # Combine all chunks into a single NumPy array
+    return np.concatenate(recorded_audio).flatten()
+
+
 def record_audio(samplerate=24000, duration=3, channels=1):
     """Records an audio clip and returns it as a NumPy array."""
     print("Recording...")
