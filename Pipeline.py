@@ -22,7 +22,7 @@ async def run_pipeline(pipeline):
         # Stream the result
         await handle_audio_stream(
             result,
-            send_audio=True,  # Set to True if you want to send audio to Audio2Face
+            send_audio=False,  # Set to True if you want to send audio to Audio2Face
             instance_name="/World/audio2face/PlayerStreaming",
             url="localhost:50051",
         )

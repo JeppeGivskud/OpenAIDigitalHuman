@@ -18,6 +18,13 @@ def record_audio(samplerate=24000, duration=3, channels=1):
     return recording.flatten()
 
 
+def play_audio(audio_data, samplerate=24000, channels=1):
+    """Plays back audio data."""
+    player = sd.OutputStream(samplerate=samplerate, channels=channels, dtype=np.int16)
+    player.start()
+    player.write(audio_data)
+
+
 def send_audio_to_audio2face_server(
     audio_data,
     samplerate=24000,
@@ -39,13 +46,6 @@ def send_audio_to_audio2face_server(
 
     # Use the function from test_client.py
     push_audio_track_stream(url, audio_data, samplerate, instance_name)
-
-
-def play_audio(audio_data, samplerate=24000, channels=1):
-    """Plays back audio data."""
-    player = sd.OutputStream(samplerate=samplerate, channels=channels, dtype=np.int16)
-    player.start()
-    player.write(audio_data)
 
 
 async def handle_audio_stream(
@@ -76,3 +76,6 @@ async def handle_audio_stream(
                     instance_name=instance_name,
                     url=url,
                 )
+            else:
+                # Play the audio locally
+                play_audio(event.data)
