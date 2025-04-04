@@ -1,4 +1,10 @@
-from agents.voice import VoicePipeline, SingleAgentVoiceWorkflow, AudioInput
+from agents.voice import (
+    VoicePipeline,
+    SingleAgentVoiceWorkflow,
+    AudioInput,
+    VoicePipelineConfig,
+    TTSModelSettings,
+)
 from agents import Agent
 from Audio import (
     record_audio,
@@ -8,7 +14,10 @@ from Audio import (
 
 def create_pipeline(agent: Agent):
     """Creates a VoicePipeline for the given agent."""
-    return VoicePipeline(workflow=SingleAgentVoiceWorkflow(agent))
+    return VoicePipeline(
+        workflow=SingleAgentVoiceWorkflow(agent),
+        config=VoicePipelineConfig(tts_settings=TTSModelSettings(voice="sage")),
+    )
 
 
 async def run_pipeline(pipeline):
