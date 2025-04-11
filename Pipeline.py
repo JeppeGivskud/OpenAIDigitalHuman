@@ -49,7 +49,7 @@ async def run_pipeline(
         else:
             if prerecordedaudiopath != None:
                 print("loading file - ", prerecordedaudiopath)
-                file, samplerate = load_audio_file("streaming_server/testrec.wav")
+                file, samplerate = load_audio_file(prerecordedaudiopath)
             else:
                 print("Using recorded audio...")
                 file = mic_recording

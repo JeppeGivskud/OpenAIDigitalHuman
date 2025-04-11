@@ -24,6 +24,24 @@ def load_audio_file(file_path):
     return data, samplerate
 
 
+def save_audio_file(audio_data, samplerate=24000):
+    """
+    Saves audio data to a file.
+
+    Parameters:
+        file_path (str): Path to save the audio file.
+        audio_data (np.ndarray): Audio data to save.
+        samplerate (int): Sample rate of the audio data.
+    """
+    from datetime import datetime
+
+    current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    randomfilepath = f"saved_audio/{current_datetime}.wav"
+
+    soundfile.write(randomfilepath, audio_data, samplerate)
+
+
 def record_audio(samplerate=24000, duration=3, channels=1):
     """Records an audio clip and returns it as a NumPy array."""
     print("Recording...")
@@ -148,6 +166,7 @@ async def handle_audio_stream(
 
     audio = np.concatenate(incoming_response).flatten()
 
+    save_audio_file(audio)  # Save the audio file for debugging
     if renderFace:
         send_audio_to_audio2face_server(
             audio,
