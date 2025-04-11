@@ -141,10 +141,21 @@ async def handle_audio_stream(
         - If `renderFace` is False, plays the audio locally.
     """
     incoming_response = []
+    first = True
 
     async for event in result.stream():
         if event.type == "voice_stream_event_audio":
-            incoming_response.append(event.data)
+            if first:
+                send_audio_to_audio2face_server(
+                    event.data,
+                    instance_name=instance_name,
+                    url=url,
+                )
+                print("First package received")
+                first = False
+            else:
+                incoming_response.append(event.data)
+                print("Package recieved")
 
     audio = np.concatenate(incoming_response).flatten()
 
