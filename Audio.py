@@ -159,14 +159,27 @@ async def handle_audio_stream(
         - If `renderFace` is False, plays the audio locally.
     """
     incoming_response = []
-
+    continue_conversation = True
     async for event in result.stream():
+        if event.type == "voice_stream_event_lifecycle":
+            print(event.event)
+            if event.event == "turn_ended":
+                print("turn_ended")
+                break
+            if event.event == "session_ended":
+                print("session should end")
+                continue_conversation = False
+                break
         if event.type == "voice_stream_event_audio":
             incoming_response.append(event.data)
+        print("global event printer: ", event.type)
 
     audio = np.concatenate(incoming_response).flatten()
 
+    print("saving audio")
     save_audio_file(audio)  # Save the audio file for debugging
+    print("Audio saved")
+
     if renderFace:
         send_audio_to_audio2face_server(
             audio,
@@ -175,3 +188,4 @@ async def handle_audio_stream(
         )
     else:
         play_audio(audio)
+    return continue_conversation

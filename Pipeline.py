@@ -4,6 +4,7 @@ from agents.voice import (
     AudioInput,
     VoicePipelineConfig,
     TTSModelSettings,
+    StreamedAudioInput,
 )
 from agents import Agent
 from Audio import (
@@ -17,6 +18,7 @@ from Audio import (
 
 def create_pipeline(agent: Agent):
     """Creates a VoicePipeline for the given agent."""
+
     return VoicePipeline(
         workflow=SingleAgentVoiceWorkflow(agent),
         config=VoicePipelineConfig(tts_settings=TTSModelSettings(voice="sage")),
@@ -26,25 +28,29 @@ def create_pipeline(agent: Agent):
 async def run_pipeline(
     pipeline, renderFace=False, useTokens=False, prerecordedaudiopath=None
 ):
-    while True:
+    continue_conversation = True
+    while continue_conversation:
         """Runs the voice pipeline with recorded audio."""
 
         print("Recording audio... (Press and hold the spacebar to stop recording)")
         mic_recording = record_audio_while_pressed()
-        audio_input = AudioInput(buffer=mic_recording)
-        print("Audio recorded.")
 
+        audio_input = StreamedAudioInput()
+        print("Adding audio to pipeline...")
+        await audio_input.add_audio(mic_recording)
+        print("Audio added to pipeline.")
         if useTokens:
-            # Send the audio input to the pipeline
-            print("Sending audio to Audio2Face...")
-            result = await pipeline.run(audio_input)
+            print("Using tokens...")
+            result = await pipeline.run(audio_input=audio_input)
+            print("Pipeline started...")
 
             # Stream the result
-            await handle_audio_stream(
+            continue_conversation = await handle_audio_stream(
                 result,
-                renderFace=renderFace,  # Set to True if you want to send audio to Audio2Face
+                renderFace=renderFace,
                 instance_name="/World/audio2face/PlayerStreaming",
                 url="localhost:50051",
+                audio_input=audio_input,
             )
         else:
             if prerecordedaudiopath != None:
@@ -70,4 +76,4 @@ async def run_pipeline(
                 play_audio(file, samplerate)
 
         # Wait for user input to continue
-        input("Press Enter to run the pipeline again...")
+        # input("Press Enter to run the pipeline again...")
