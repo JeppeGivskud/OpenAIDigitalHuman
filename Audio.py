@@ -158,23 +158,45 @@ async def handle_audio_stream(
         - If `renderFace` is True, sends the audio to the Audio2Face server.
         - If `renderFace` is False, plays the audio locally.
     """
-    incoming_response = []
     continue_conversation = True
-    async for event in result.stream():
-        if event.type == "voice_stream_event_lifecycle":
-            print(event.event)
-            if event.event == "turn_ended":
-                print("turn_ended")
-                break
-            if event.event == "session_ended":
-                print("session should end")
-                continue_conversation = False
-                break
-        if event.type == "voice_stream_event_audio":
-            incoming_response.append(event.data)
-        print("global event printer: ", event.type)
 
-    audio = np.concatenate(incoming_response).flatten()
+    incoming_response = []
+    try:
+        async for event in result.stream():
+            try:
+                # Apply a timeout to each event individually
+                event = await asyncio.wait_for(event, timeout=1)
+                print("global event printer: ", event.type)
+                if event.type == "voice_stream_event_lifecycle":
+                    print(event.event)
+                    if event.event == "turn_ended":
+                        print("turn_ended")
+                        break
+                    if event.event == "session_ended":
+                        print("session should end")
+                        continue_conversation = False
+                        break
+                elif event.type == "voice_stream_event_audio":
+                    incoming_response.append(event.data)
+            except asyncio.TimeoutError:
+                print("Timeout: No events received from the stream.")
+                incoming_response, samplerate = load_audio_file(
+                    "saved_audio/Rosie/iDidntHearYou.wav"
+                )
+                # Handle the timeout case, e.g., log an error, play fallback audio, or return
+                break
+    except Exception as e:
+        print(f"Error while streaming audio: {e}")
+
+    try:
+        print(incoming_response)
+        # Process the audio as needed
+        audio = np.concatenate(incoming_response).flatten()
+    except ValueError as e:
+        print(f"Error while processing audio: {e}")
+
+    if audio.dtype == np.float32:
+        audio = (audio * 32767).astype(np.int16)
 
     print("saving audio")
     save_audio_file(audio)  # Save the audio file for debugging
