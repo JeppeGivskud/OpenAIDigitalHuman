@@ -4,7 +4,7 @@ import soundfile
 from streaming_server.test_client import push_audio_track_stream
 
 
-def load_audio_file(file_path):
+def load_audio_file(file_path, samplerate=24000, channels=1):
     """
     Loads an audio file and returns the data and sample rate.
 
@@ -14,7 +14,16 @@ def load_audio_file(file_path):
     Returns:
         tuple: A tuple containing the audio data as a NumPy array and the sample rate.
     """
-    data, samplerate = soundfile.read(file_path, dtype="float32")
+    import soundfile as sf
+
+    data, samplerate = sf.read(file_path, dtype="float32")
+
+    # data, samplerate = soundfile.read(
+    #    file_path, samplerate=samplerate, channels=channels, dtype=np.int16
+    # )
+
+    data = data.astype(np.int16)
+
     # Only Mono audio is supported
     if len(data.shape) > 1:
         data = np.average(data, axis=1)
@@ -42,20 +51,6 @@ def save_audio_file(audio_data, samplerate=24000):
     soundfile.write(randomfilepath, audio_data, samplerate)
 
 
-def record_audio(samplerate=24000, duration=3, channels=1):
-    """Records an audio clip and returns it as a NumPy array."""
-    print("Recording...")
-    recording = sd.rec(
-        int(samplerate * duration),
-        samplerate=samplerate,
-        channels=channels,
-        dtype=np.int16,
-    )
-    sd.wait()
-    print("Recording complete.")
-    return recording.flatten()
-
-
 def play_audio(audio_data, samplerate=24000, channels=1):
     """
     Plays back audio data.
@@ -66,7 +61,9 @@ def play_audio(audio_data, samplerate=24000, channels=1):
     player.write(audio_data)
 
 
-def record_audio_while_pressed(samplerate=24000, channels=1):
+def record_audio_while_pressed(
+    InitiateConversation=False, samplerate=24000, channels=1
+):
     import keyboard
 
     """
@@ -79,22 +76,27 @@ def record_audio_while_pressed(samplerate=24000, channels=1):
     Returns:
         np.ndarray: The recorded audio as a NumPy array.
     """
+    if InitiateConversation:
+        loaded_audio = load_audio_file("saved_audio/User/Initiering.wav")
+        print("Initiating conversation...")
+        InitiateConversation = False
+        return np.concatenate(loaded_audio).flatten()
+    else:
+        # Create a buffer to store the recorded audio
+        recorded_audio = []
+        # Start the input stream
+        with sd.InputStream(
+            samplerate=samplerate, channels=channels, dtype=np.int16
+        ) as stream:
 
-    # Create a buffer to store the recorded audio
-    recorded_audio = []
-
-    # Start the input stream
-    with sd.InputStream(
-        samplerate=samplerate, channels=channels, dtype=np.int16
-    ) as stream:
-
-        while not (keyboard.is_pressed("space")):
-            # Read audio data from the stream
-            audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
-            recorded_audio.append(audio_chunk)
-
-    # Combine all chunks into a single NumPy array
-    return np.concatenate(recorded_audio).flatten()
+            while not (keyboard.is_pressed("space")):
+                # Read audio data from the stream
+                audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
+                recorded_audio.append(audio_chunk)
+        print("Recording complete.")
+        save_audio_file(np.concatenate(recorded_audio).flatten())
+        # Combine all chunks into a single NumPy array
+        return np.concatenate(recorded_audio).flatten()
 
 
 def format_audio_data(audio_data, samplerate=24000):

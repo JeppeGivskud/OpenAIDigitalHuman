@@ -26,14 +26,18 @@ def create_pipeline(agent: Agent):
 
 
 async def run_pipeline(
-    pipeline, renderFace=False, useTokens=False, prerecordedaudiopath=None
+    pipeline,
+    renderFace=False,
+    useTokens=False,
+    InitiateConversation=False,
+    prerecordedaudiopath=None,
 ):
     continue_conversation = True
     while continue_conversation:
         """Runs the voice pipeline with recorded audio."""
 
         print("Recording audio... (Press and hold the spacebar to stop recording)")
-        mic_recording = record_audio_while_pressed()
+        mic_recording = record_audio_while_pressed(InitiateConversation)
 
         audio_input = StreamedAudioInput()
         print("Adding audio to pipeline...")

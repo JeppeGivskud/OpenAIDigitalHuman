@@ -7,11 +7,14 @@ from Pipeline import create_pipeline, run_pipeline
 async def main():
     renderFace = False
     useTokens = False
+    InitiateConversation = False
     prerecordedaudiopath = None
-    if len(sys.argv) >= 4:
+    if len(sys.argv) >= 5:
+
         renderFace = sys.argv[1].lower() == "true"
         useTokens = sys.argv[2].lower() == "true"
-        prerecordedaudiopath = sys.argv[3].lower()
+        InitiateConversation = sys.argv[3].lower() == "true"
+        prerecordedaudiopath = sys.argv[4].lower()
 
     pipeline = create_pipeline(Rosie_dk_agent)
     print(renderFace, useTokens)
@@ -19,6 +22,7 @@ async def main():
         pipeline,
         renderFace=renderFace,
         useTokens=useTokens,
+        InitiateConversation=InitiateConversation,
         prerecordedaudiopath=prerecordedaudiopath,
     )
 
