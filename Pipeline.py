@@ -50,7 +50,6 @@ async def run_pipeline(
                 renderFace=renderFace,
                 instance_name="/World/audio2face/PlayerStreaming",
                 url="localhost:50051",
-                audio_input=audio_input,
             )
         else:
             if prerecordedaudiopath != None:
