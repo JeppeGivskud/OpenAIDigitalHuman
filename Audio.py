@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 import sounddevice as sd
 import soundfile
 from streaming_server.test_client import push_audio_track_stream
@@ -18,12 +19,6 @@ def load_audio_file(file_path, samplerate=24000, channels=1):
     import soundfile as sf
 
     data, samplerate = sf.read(file_path, dtype="float32")
-
-    # data, samplerate = soundfile.read(
-    #    file_path, samplerate=samplerate, channels=channels, dtype=np.int16
-    # )
-
-    data = data.astype(np.int16)
 
     # Only Mono audio is supported
     if len(data.shape) > 1:
@@ -57,7 +52,7 @@ def play_audio(audio_data, samplerate=24000, channels=1):
     Plays back audio data.
     Only used for debugging
     """
-    player = sd.OutputStream(samplerate=samplerate, channels=channels, dtype=np.int16)
+    player = sd.OutputStream(samplerate=samplerate, channels=channels, dtype=np.float32)
     player.start()
     player.write(audio_data)
 
@@ -87,7 +82,7 @@ def record_audio_while_pressed(
         recorded_audio = []
         # Start the input stream
         with sd.InputStream(
-            samplerate=samplerate, channels=channels, dtype=np.int16
+            samplerate=samplerate, channels=channels, dtype=np.float32
         ) as stream:
 
             while not (keyboard.is_pressed("space")):
@@ -146,6 +141,10 @@ def send_audio_to_audio2face_server(
     push_audio_track_stream(url, audio_data, samplerate, instance_name)
 
 
+def int16_to_float32(audio: npt.NDArray[np.int16]) -> npt.NDArray[np.float32]:
+    return (audio.astype(np.float32) / 32768.0).clip(-1.0, 1.0)
+
+
 async def handle_audio_stream(
     result,
     renderFace=False,
@@ -179,7 +178,7 @@ async def handle_audio_stream(
                 continue_conversation = False
                 break
         if event.type == "voice_stream_event_audio":
-            incoming_response.append(event.data)
+            incoming_response.append(int16_to_float32(event.data))
         print("global event printer: ", event.type)
 
     audio = np.concatenate(incoming_response).flatten()
