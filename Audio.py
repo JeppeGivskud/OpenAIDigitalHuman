@@ -2,6 +2,7 @@ import numpy as np
 import sounddevice as sd
 import soundfile
 from streaming_server.test_client import push_audio_track_stream
+import sys
 
 
 def load_audio_file(file_path, samplerate=24000, channels=1):
@@ -93,6 +94,11 @@ def record_audio_while_pressed(
                 # Read audio data from the stream
                 audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
                 recorded_audio.append(audio_chunk)
+
+                if keyboard.is_pressed("escape"):
+                    print("Program stopped by user.")
+                    sys.exit()  # Terminates the entire program
+
         print("Recording complete.")
         save_audio_file(np.concatenate(recorded_audio).flatten())
         # Combine all chunks into a single NumPy array

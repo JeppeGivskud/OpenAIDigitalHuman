@@ -36,13 +36,12 @@ async def run_pipeline(
     while continue_conversation:
         """Runs the voice pipeline with recorded audio."""
 
-        print("Recording audio... (Press and hold the spacebar to stop recording)")
+        print("Recording audio... (Press the spacebar to stop recording)")
         mic_recording = record_audio_while_pressed(InitiateConversation)
 
-        audio_input = StreamedAudioInput()
         print("Adding audio to pipeline...")
-        await audio_input.add_audio(mic_recording)
-        print("Audio added to pipeline.")
+        audio_input = AudioInput(buffer=mic_recording)
+
         if useTokens:
             print("Using tokens...")
             result = await pipeline.run(audio_input=audio_input)
