@@ -1,10 +1,18 @@
 import os
 import re
 from datetime import datetime
+import sys
+
+# Get the session number from the command-line arguments
+if len(sys.argv) < 2:
+    print("Usage: python process_transcriptions.py <session_number>")
+    sys.exit(1)
+
+SESSION_NUMBER = sys.argv[1]
 
 # Directory containing the .txt files
-AUDIO_DIR = "./AudioFiles/session_6"
-MERGED_FILE = "./AudioFiles/session_6_Merged_Python.txt"
+AUDIO_DIR = f"./AudioFiles/session_{SESSION_NUMBER}"
+MERGED_FILE = f"./AudioFiles/session_{SESSION_NUMBER}_Merged_Python.txt"
 
 # Initialize variables to track the oldest and newest dates
 oldest_date = None
