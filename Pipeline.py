@@ -50,6 +50,9 @@ async def run_pipeline(
             print("Recording audio... (Press the spacebar to stop recording)")
             user_audio = record_audio_while_pressed()
 
+        # User done with speaking
+        save_audio_file(user_audio, sessionID, "user")
+
         openai_audio_input = AudioInput(buffer=user_audio)
 
         if useTokens:
@@ -70,13 +73,8 @@ async def run_pipeline(
             ai_audio = mic_recording
             samplerate = 24000
 
-        print("Saving audio files...")
-        save_audio_file(
-            user_audio, sessionID, "user"
-        )  # Save the audio file for transcription
-        save_audio_file(
-            ai_audio, sessionID, "rosie"
-        )  # Save the audio file for transcription
+        # AI done with generating audio
+        save_audio_file(ai_audio, sessionID, "rosie")
 
         if renderFace:
             print("Sending audio to Audio2Face...")
