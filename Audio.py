@@ -4,6 +4,7 @@ import sounddevice as sd
 import soundfile
 from streaming_server.test_client import push_audio_track_stream
 import sys
+import keyboard
 
 
 def load_audio_file(file_path, samplerate=24000, channels=1):
@@ -26,10 +27,11 @@ def load_audio_file(file_path, samplerate=24000, channels=1):
 
     # sd.play(data, samplerate)
     # sd.wait()
-    return data, samplerate
+
+    return data
 
 
-def save_audio_file(audio_data, samplerate=24000):
+def save_audio_file(audio_data, SessionID, Speaker, samplerate=24000):
     """
     Saves audio data to a file.
 
@@ -42,7 +44,9 @@ def save_audio_file(audio_data, samplerate=24000):
 
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    randomfilepath = f"saved_audio/{current_datetime}.wav"
+    randomfilepath = (
+        f"saved_audio/Sessions/{SessionID}/{current_datetime}-{Speaker}.wav"
+    )
 
     soundfile.write(randomfilepath, audio_data, samplerate)
 
@@ -60,8 +64,6 @@ def play_audio(audio_data, samplerate=24000, channels=1):
 def record_audio_while_pressed(
     InitiateConversation=False, samplerate=24000, channels=1
 ):
-    import keyboard
-
     """
     Records an audio clip as long as a button is pressed and returns it as a NumPy array.
 
@@ -72,32 +74,26 @@ def record_audio_while_pressed(
     Returns:
         np.ndarray: The recorded audio as a NumPy array.
     """
-    if InitiateConversation:
-        loaded_audio = load_audio_file("saved_audio/User/Initiering.wav")
-        print("Initiating conversation...")
-        InitiateConversation = False
-        return np.concatenate(loaded_audio).flatten()
-    else:
-        # Create a buffer to store the recorded audio
-        recorded_audio = []
-        # Start the input stream
-        with sd.InputStream(
-            samplerate=samplerate, channels=channels, dtype=np.float32
-        ) as stream:
 
-            while not (keyboard.is_pressed("space")):
-                # Read audio data from the stream
-                audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
-                recorded_audio.append(audio_chunk)
+    # Create a buffer to store the recorded audio
+    recorded_audio = []
+    # Start the input stream
+    with sd.InputStream(
+        samplerate=samplerate, channels=channels, dtype=np.float32
+    ) as stream:
 
-                if keyboard.is_pressed("escape"):
-                    print("Program stopped by user.")
-                    sys.exit()  # Terminates the entire program
+        while not (keyboard.is_pressed("space")):
+            # Read audio data from the stream
+            audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
+            recorded_audio.append(audio_chunk)
 
-        print("Recording complete.")
-        save_audio_file(np.concatenate(recorded_audio).flatten())
-        # Combine all chunks into a single NumPy array
-        return np.concatenate(recorded_audio).flatten()
+            if keyboard.is_pressed("escape"):
+                print("Program stopped by user.")
+                sys.exit()  # Terminates the entire program
+
+    print("Recording complete.")
+    # Combine all chunks into a single NumPy array
+    return np.concatenate(recorded_audio).flatten()
 
 
 def format_audio_data(audio_data, samplerate=24000):
@@ -115,10 +111,6 @@ def format_audio_data(audio_data, samplerate=24000):
     if len(audio_data.shape) > 1:
         audio_data = np.average(audio_data, axis=1)
 
-    # Convert audio data to float32 and normalize to [-1.0, 1.0]
-    if audio_data.dtype != np.float32:
-        audio_data = audio_data.astype(np.float32)
-    audio_data /= np.max(np.abs(audio_data))  # Normalize to [-1.0, 1.0]
     return audio_data
 
 
@@ -147,7 +139,7 @@ def int16_to_float32(audio: npt.NDArray[np.int16]) -> npt.NDArray[np.float32]:
 
 async def handle_audio_stream(
     result,
-    renderFace=False,
+    InitiateConversation=False,
     instance_name="/World/audio2face/PlayerStreaming",
     url="localhost:50051",
 ):
@@ -183,16 +175,11 @@ async def handle_audio_stream(
 
     audio = np.concatenate(incoming_response).flatten()
 
-    print("saving audio")
-    save_audio_file(audio)  # Save the audio file for debugging
-    print("Audio saved")
+    if InitiateConversation:
+        print("Ready to Initiate Conversation - Press space to start")
+        while not (keyboard.is_pressed("space")):
+            if keyboard.is_pressed("space"):
+                print("Initiating conversation...")
+                break
 
-    if renderFace:
-        send_audio_to_audio2face_server(
-            audio,
-            instance_name=instance_name,
-            url=url,
-        )
-    else:
-        play_audio(audio)
-    return continue_conversation
+    return audio, continue_conversation
