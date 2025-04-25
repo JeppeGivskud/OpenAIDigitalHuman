@@ -14,12 +14,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Define paths relative to the script's location
 SESSION_PATH="$SCRIPT_DIR/../saved_audio/Sessions/$SESSION_NUMBER"
-OUTPUT_DIR="$SCRIPT_DIR/../Transcription/Output"
 AUDIO_DIR="$SCRIPT_DIR/../Transcription/AudioFiles/session_$SESSION_NUMBER"
 MERGED_FILE="$SCRIPT_DIR/../Transcription/AudioFiles/session_${SESSION_NUMBER}_Merged.txt"
 
 # Ensure the output and temporary directories exist
-mkdir -p "$OUTPUT_DIR"
 mkdir -p "$AUDIO_DIR"
 
 # Copy all .wav files into the temporary directory
