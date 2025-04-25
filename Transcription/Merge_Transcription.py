@@ -54,7 +54,9 @@ for txt_file in sorted(os.listdir(AUDIO_DIR)):
 
         # Calculate the sentence length
         sentence_length = len(text)
-        total_sentence_length += sentence_length  # Add to total length
+
+        if "user" in txt_file:
+            total_sentence_length += sentence_length  # Add to total length
 
         # Increment the turn count
         turn_count += 1
@@ -71,7 +73,9 @@ else:
     date_difference = 0
 
 # Calculate the average sentence length
-average_sentence_length = total_sentence_length / turn_count if turn_count > 0 else 0
+average_sentence_length = (
+    total_sentence_length / round(turn_count / 2) if turn_count > 0 else 0
+)
 
 # Add the date range, difference, turn count, and average sentence length to the top of the merged content
 header = [
@@ -79,7 +83,7 @@ header = [
     f"Newest Date: {newest_date.strftime('%Y-%m-%d_%H-%M-%S') if newest_date else 'Unknown'}",
     f"Difference in Seconds: {date_difference}",
     f"Total Turns: {turn_count}",
-    f"Average Sentence Length: {average_sentence_length:.2f} chars",
+    f"Average Sentence Length of User: {average_sentence_length:.2f} chars",
     "\n",
 ]
 merged_content = "\n".join(header) + "\n".join(merged_content)

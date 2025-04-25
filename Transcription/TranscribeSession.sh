@@ -1,10 +1,16 @@
 #!/bin/bash
 
+# Check if a session number is provided as a command-line argument
+if [ -z "$1" ]; then
+    echo "Usage: $0 <session_number>"
+    exit 1
+fi
+
+# Get the session number from the command-line argument
+SESSION_NUMBER=$1
+
 # Get the directory of the script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Get the session number
-SESSION_NUMBER=6  # Change this to the desired session number
 
 # Define paths relative to the script's location
 SESSION_PATH="$SCRIPT_DIR/../saved_audio/Sessions/$SESSION_NUMBER"
