@@ -3,3 +3,5 @@ __pycache__
 api_key.txt
 env
 saved_audio
+AudioFiles
+models
