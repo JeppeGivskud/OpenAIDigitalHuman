@@ -4,6 +4,7 @@ from agents.voice import (
     AudioInput,
     VoicePipelineConfig,
     TTSModelSettings,
+    STTModelSettings,
     StreamedAudioInput,
 )
 from agents import Agent
@@ -21,7 +22,10 @@ def create_pipeline(agent: Agent):
 
     return VoicePipeline(
         workflow=SingleAgentVoiceWorkflow(agent),
-        config=VoicePipelineConfig(tts_settings=TTSModelSettings(voice="sage")),
+        config=VoicePipelineConfig(
+            stt_settings=STTModelSettings(language="Danish"),
+            tts_settings=TTSModelSettings(voice="sage"),
+        ),
     )
 
 
