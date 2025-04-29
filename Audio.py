@@ -5,6 +5,8 @@ import soundfile
 from streaming_server.test_client import push_audio_track_stream
 import sys
 import keyboard
+import csv
+import os
 
 
 def load_audio_file(file_path, samplerate=24000, channels=1):
@@ -33,22 +35,40 @@ def load_audio_file(file_path, samplerate=24000, channels=1):
 
 def save_audio_file(audio_data, SessionID, Speaker, samplerate=24000):
     """
-    Saves audio data to a file.
+    Saves audio data to a file or logs metadata to a CSV file.
 
     Parameters:
-        file_path (str): Path to save the audio file.
         audio_data (np.ndarray): Audio data to save.
+        SessionID (int): The session ID.
+        Speaker (str): The speaker (e.g., "user" or "rosie").
         samplerate (int): Sample rate of the audio data.
     """
     from datetime import datetime
 
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    audio_length = len(audio_data) / samplerate  # Calculate audio length in seconds
 
-    randomfilepath = (
-        f"saved_audio/Sessions/{SessionID}/{current_datetime}-{Speaker}.wav"
-    )
+    save_raw_audio = False  # Set to True to save raw audio
+    if save_raw_audio:
+        # Path for saving raw audio (if enabled)
+        randomfilepath = (
+            f"saved_audio/Sessions/{SessionID}/{current_datetime}-{Speaker}.wav"
+        )
+        soundfile.write(randomfilepath, audio_data, samplerate)
+    else:
+        # Save metadata to a CSV file
+        csv_file_path = f"saved_data/{SessionID}_{current_datetime}_metadata.csv"
+        file_exists = os.path.isfile(csv_file_path)
 
-    soundfile.write(randomfilepath, audio_data, samplerate)
+        with open(csv_file_path, mode="a", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            # Write header if the file is being created
+            if not file_exists:
+                writer.writerow(
+                    ["Timestamp", "AudioLengthSeconds", "Speaker", "SessionID"]
+                )
+            # Write metadata row
+            writer.writerow([current_datetime, audio_length, Speaker, SessionID])
 
 
 def play_audio(audio_data, samplerate=24000, channels=1):
