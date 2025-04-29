@@ -33,7 +33,7 @@ def load_audio_file(file_path, samplerate=24000, channels=1):
     return data
 
 
-def save_audio_file(audio_data, SessionID, Speaker, samplerate=24000):
+def save_audio_file(audio_data, SessionID, Speaker, samplerate=24000, saveAudio=False):
     """
     Saves audio data to a file or logs metadata to a CSV file.
 
@@ -47,28 +47,26 @@ def save_audio_file(audio_data, SessionID, Speaker, samplerate=24000):
 
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     audio_length = len(audio_data) / samplerate  # Calculate audio length in seconds
-
-    save_raw_audio = False  # Set to True to save raw audio
-    if save_raw_audio:
+    print("saveAudio: ", saveAudio)
+    if saveAudio:
         # Path for saving raw audio (if enabled)
+        print("Saving audio to file...")
         randomfilepath = (
             f"saved_audio/Sessions/{SessionID}/{current_datetime}-{Speaker}.wav"
         )
         soundfile.write(randomfilepath, audio_data, samplerate)
-    else:
-        # Save metadata to a CSV file
-        csv_file_path = f"saved_data/{SessionID}_{current_datetime}_metadata.csv"
-        file_exists = os.path.isfile(csv_file_path)
 
-        with open(csv_file_path, mode="a", newline="") as csvfile:
-            writer = csv.writer(csvfile)
-            # Write header if the file is being created
-            if not file_exists:
-                writer.writerow(
-                    ["Timestamp", "AudioLengthSeconds", "Speaker", "SessionID"]
-                )
-            # Write metadata row
-            writer.writerow([current_datetime, audio_length, Speaker, SessionID])
+    # Save metadata to a CSV file
+    csv_file_path = f"saved_data/Sessions/Session_{SessionID}_metadata.csv"
+    file_exists = os.path.isfile(csv_file_path)
+
+    with open(csv_file_path, mode="a", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        # Write header if the file is being created
+        if not file_exists:
+            writer.writerow(["Timestamp", "AudioLengthSeconds", "Speaker", "SessionID"])
+        # Write metadata row
+        writer.writerow([current_datetime, audio_length, Speaker, SessionID])
 
 
 def play_audio(audio_data, samplerate=24000, channels=1):

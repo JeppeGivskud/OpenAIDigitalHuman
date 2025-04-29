@@ -2,7 +2,8 @@
 __pycache__
 api_key.txt
 env
-models
 *.wav
 *.mp3
+*.txt
 *.csv
+*.pt

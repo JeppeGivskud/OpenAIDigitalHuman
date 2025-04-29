@@ -8,13 +8,13 @@ async def main():
     renderFace = False
     useTokens = False
     InitiateConversation = False
-    prerecordedaudiopath = None
+    saveAudio = False
     if len(sys.argv) >= 5:
 
         renderFace = sys.argv[1].lower() == "true"
         useTokens = sys.argv[2].lower() == "true"
         InitiateConversation = sys.argv[3].lower() == "true"
-        prerecordedaudiopath = sys.argv[4].lower()
+        saveAudio = sys.argv[4].lower() == "true"
 
     pipeline = create_pipeline(Rosie_dk_agent)
 
@@ -24,15 +24,15 @@ async def main():
         print("Using tokens")
     if InitiateConversation:
         print("Initiating conversation")
-    if prerecordedaudiopath:
-        print("Using pre-recorded audio:", prerecordedaudiopath)
+    if saveAudio:
+        print("Saving microphone audio:", saveAudio)
 
     await run_pipeline(
         pipeline,
         renderFace=renderFace,
         useTokens=useTokens,
         InitiateConversation=InitiateConversation,
-        prerecordedaudiopath=prerecordedaudiopath,
+        saveAudio=saveAudio,
     )
 
 
