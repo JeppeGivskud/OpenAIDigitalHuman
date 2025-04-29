@@ -17,7 +17,16 @@ async def main():
         prerecordedaudiopath = sys.argv[4].lower()
 
     pipeline = create_pipeline(Rosie_dk_agent)
-    print(renderFace, useTokens)
+
+    if renderFace:
+        print("Rendering face")
+    if useTokens:
+        print("Using tokens")
+    if InitiateConversation:
+        print("Initiating conversation")
+    if prerecordedaudiopath:
+        print("Using pre-recorded audio:", prerecordedaudiopath)
+
     await run_pipeline(
         pipeline,
         renderFace=renderFace,

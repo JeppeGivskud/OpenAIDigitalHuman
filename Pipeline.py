@@ -24,7 +24,7 @@ def create_pipeline(agent: Agent):
     return VoicePipeline(
         workflow=SingleAgentVoiceWorkflow(agent),
         config=VoicePipelineConfig(
-            stt_settings=STTModelSettings(language="Danish"),
+            stt_settings=STTModelSettings(language="da"),
             tts_settings=TTSModelSettings(voice="sage"),
         ),
     )
@@ -74,7 +74,7 @@ async def run_pipeline(
             print("Response finished...", " Continue = ", continue_conversation)
         else:
             print("Using recorded audio...")
-            ai_audio = mic_recording
+            ai_audio = user_audio
             samplerate = 24000
 
         # AI done with generating audio
