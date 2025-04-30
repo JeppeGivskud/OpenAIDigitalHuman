@@ -1,21 +1,46 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "echo",
+            "label": "Run Rosie omniverse",
             "type": "shell",
-            "command": "echo Hello"
-        },
-        {
-            "label": "Run rosie with face",
-            "type": "shell",
-            "command": "source env/Scripts/activate \\ python main.py true false false true",
+            "command": "powershell.exe",
+            "args": [
+                "-Command",
+                ".\\env\\Scripts\\Activate.ps1; python main.py true true true true"
+            ],
             "problemMatcher": [],
             "group": {
                 "kind": "build",
                 "isDefault": true
+            }
+        },
+        {
+            "label": "Run rosie audio",
+            "type": "shell",
+            "command": "powershell.exe",
+            "args": [
+                "-Command",
+                ".\\env\\Scripts\\Activate.ps1; python main.py true false true true"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Run rosie microphone only",
+            "type": "shell",
+            "command": "powershell.exe",
+            "args": [
+                "-Command",
+                ".\\env\\Scripts\\Activate.ps1; python main.py false false false false"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
             }
         }
     ]

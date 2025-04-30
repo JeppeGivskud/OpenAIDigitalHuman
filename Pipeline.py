@@ -16,6 +16,7 @@ from Audio import (
     play_audio,
 )
 import os
+from consolePrints import printLytter, printTænker, printClear
 
 
 def create_pipeline(agent: Agent):
@@ -47,11 +48,13 @@ async def run_pipeline(
         user_audio = None
         ai_audio = None
 
+        printLytter()
         if InitiateConversation:
-            print("Loading pre-recorded audio...")
+            # print("Loading pre-recorded audio...")
             user_audio = load_audio_file("saved_audio/User/Initiering.wav")
+            printClear()
         else:
-            print("Recording audio... (Press the spacebar to stop recording)")
+            # print("Recording audio... (Press the spacebar to stop recording)")
             user_audio = record_audio_while_pressed()
 
         # User done with speaking
@@ -60,7 +63,8 @@ async def run_pipeline(
         openai_audio_input = AudioInput(buffer=user_audio)
 
         if useTokens:
-            print("Using tokens...")
+            # print("Using tokens...")
+            printTænker()
             result = await pipeline.run(audio_input=openai_audio_input)
 
             # Stream the result
@@ -71,9 +75,9 @@ async def run_pipeline(
                 url="localhost:50051",
             )
             InitiateConversation = False
-            print("Response finished...", " Continue = ", continue_conversation)
+            # print("Response finished...", " Continue = ", continue_conversation)
         else:
-            print("Using recorded audio...")
+            # print("Using recorded audio...")
             ai_audio = user_audio
             samplerate = 24000
 
@@ -81,7 +85,8 @@ async def run_pipeline(
         save_audio_file(ai_audio, sessionID, "rosie", saveAudio=saveAudio)
 
         if renderFace:
-            print("Sending audio to Audio2Face...")
+            # print("Sending audio to Audio2Face...")
+            printClear()
             send_audio_to_audio2face_server(
                 audio_data=ai_audio,
                 samplerate=24000,
@@ -89,7 +94,7 @@ async def run_pipeline(
                 url="localhost:50051",
             )
         else:
-            print("Playing audio locally...")
+            # print("Playing audio locally...")
             play_audio(ai_audio)
 
 

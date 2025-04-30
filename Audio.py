@@ -7,6 +7,7 @@ import sys
 import keyboard
 import csv
 import os
+from consolePrints import printLytter
 
 
 def load_audio_file(file_path, samplerate=24000, channels=1):
@@ -47,10 +48,10 @@ def save_audio_file(audio_data, SessionID, Speaker, samplerate=24000, saveAudio=
 
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     audio_length = len(audio_data) / samplerate  # Calculate audio length in seconds
-    print("saveAudio: ", saveAudio)
+    # print("saveAudio: ", saveAudio)
     if saveAudio:
         # Path for saving raw audio (if enabled)
-        print("Saving audio to file...")
+        # print("Saving audio to file...")
         randomfilepath = (
             f"saved_audio/Sessions/{SessionID}/{current_datetime}-{Speaker}.wav"
         )
@@ -106,10 +107,10 @@ def record_audio_while_pressed(
             recorded_audio.append(audio_chunk)
 
             if keyboard.is_pressed("escape"):
-                print("Program stopped by user.")
+                # print("Program stopped by user.")
                 sys.exit()  # Terminates the entire program
 
-    print("Recording complete.")
+    # print("Recording complete.")
     # Combine all chunks into a single NumPy array
     return np.concatenate(recorded_audio).flatten()
 
@@ -147,7 +148,7 @@ def send_audio_to_audio2face_server(
     # sd.play(audio_data, samplerate)    #for debugging
     # sd.wait()                          #for debugging
 
-    print("Sending Audio")
+    # print("Sending Audio")
     push_audio_track_stream(url, audio_data, samplerate, instance_name)
 
 
@@ -179,25 +180,26 @@ async def handle_audio_stream(
     continue_conversation = True
     async for event in result.stream():
         if event.type == "voice_stream_event_lifecycle":
-            print(event.event)
+            # print(event.event)
             if event.event == "turn_ended":
-                print("turn_ended")
+                # print("turn_ended")
                 break
             if event.event == "session_ended":
-                print("session should end")
+                # print("session should end")
                 continue_conversation = False
                 break
         if event.type == "voice_stream_event_audio":
             incoming_response.append(int16_to_float32(event.data))
-        print("global event printer: ", event.type)
+        # print("global event printer: ", event.type)
 
     audio = np.concatenate(incoming_response).flatten()
 
     if InitiateConversation:
-        print("Ready to Initiate Conversation - Press space to start")
+        # print("Ready to Initiate Conversation - Press space to start")
+        printLytter()
         while not (keyboard.is_pressed("space")):
             if keyboard.is_pressed("space"):
-                print("Initiating conversation...")
+                # print("Initiating conversation...")
                 break
 
     return audio, continue_conversation
