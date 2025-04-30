@@ -35,7 +35,7 @@ async def run_pipeline(
     renderFace=False,
     useTokens=False,
     InitiateConversation=False,
-    prerecordedaudiopath=None,
+    saveAudio=False,
 ):
 
     continue_conversation = True
@@ -55,7 +55,7 @@ async def run_pipeline(
             user_audio = record_audio_while_pressed()
 
         # User done with speaking
-        save_audio_file(user_audio, sessionID, "user")
+        save_audio_file(user_audio, sessionID, "user", saveAudio=saveAudio)
 
         openai_audio_input = AudioInput(buffer=user_audio)
 
@@ -78,7 +78,7 @@ async def run_pipeline(
             samplerate = 24000
 
         # AI done with generating audio
-        save_audio_file(ai_audio, sessionID, "rosie")
+        save_audio_file(ai_audio, sessionID, "rosie", saveAudio=saveAudio)
 
         if renderFace:
             print("Sending audio to Audio2Face...")

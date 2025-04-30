@@ -69,3 +69,8 @@ pip install keyboard
 6) Get an OpenAPI key and export it into your path (DO NOT SHARE THIS KEY) https://platform.openai.com/docs/libraries?desktop-os=macOS#create-and-export-an-api-key
 
 Now main.py should be able to run
+
+```
+source env/Scripts/activate
+python main.py true true false true
+```
