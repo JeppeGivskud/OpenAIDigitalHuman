@@ -6,8 +6,8 @@ from datetime import datetime
 
 current_Session = 0
 # Read the current number from FolderName
-if os.path.exists("../saved_audio/FolderName"):
-    folder_name_path = "../saved_audio/FolderName"
+if os.path.exists("./saved_audio/FolderName"):
+    folder_name_path = "./saved_audio/FolderName"
     with open(folder_name_path, "r") as file:
         try:
             current_Session = int(file.read().strip())

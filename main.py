@@ -1,7 +1,13 @@
 import asyncio
+import threading
 import sys
+from GUI import root  # Import the tkinter root object from GUI.py
 from My_Agents import Rosie_dk_agent
 from Pipeline import create_pipeline, run_pipeline
+
+
+def start_gui():
+    root.mainloop()  # Start the tkinter GUI event loop
 
 
 async def main():
@@ -10,11 +16,14 @@ async def main():
     InitiateConversation = False
     saveAudio = False
     if len(sys.argv) >= 5:
-
         renderFace = sys.argv[1].lower() == "true"
         useTokens = sys.argv[2].lower() == "true"
         InitiateConversation = sys.argv[3].lower() == "true"
         saveAudio = sys.argv[4].lower() == "true"
+
+    # Start the GUI in a separate thread
+    gui_thread = threading.Thread(target=start_gui, daemon=True)
+    gui_thread.start()
 
     pipeline = create_pipeline(Rosie_dk_agent)
 
