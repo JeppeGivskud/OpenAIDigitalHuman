@@ -30,6 +30,7 @@ def IncrementSession():
 
 
 def makeCSV():
+    readCurrentSession()
     # Initialize CSV file with headers if it doesn't exist
     program_timestamp = datetime.now().strftime(
         "%Y-%m-%d_%H-%M-%S"
@@ -53,6 +54,7 @@ def makeCSV():
 
 # Function to log actions
 def log_action(success, failure):
+    readCurrentSession()
     global ai_initiates, user_initiates, current_Session
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(csv_file, mode="a", newline="") as file:

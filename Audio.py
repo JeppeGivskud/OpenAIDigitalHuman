@@ -127,9 +127,6 @@ def record_audio_while_pressed(samplerate=24000, channels=1):
                 # print("Program stopped by user.")
                 sys.exit()  # Terminates the entire program
 
-            print("Recording audio...")
-            print(record, Initiate)
-
     return trim_audio(np.concatenate(recorded_audio).flatten())
 
 
