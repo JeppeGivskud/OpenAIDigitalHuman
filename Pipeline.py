@@ -49,6 +49,7 @@ async def run_pipeline(
         ai_audio = None
 
         printLytter()
+
         if InitiateConversation:
             # print("Loading pre-recorded audio...")
             user_audio = load_audio_file("saved_audio/User/Initiering.wav")
@@ -71,8 +72,6 @@ async def run_pipeline(
             ai_audio, continue_conversation = await handle_audio_stream(
                 result=result,
                 InitiateConversation=InitiateConversation,
-                instance_name="/World/audio2face/PlayerStreaming",
-                url="localhost:50051",
             )
             InitiateConversation = False
             # print("Response finished...", " Continue = ", continue_conversation)
@@ -105,15 +104,15 @@ def makeSessionFolder():
     Returns:
         int: The new session number.
     """
-    folder_name_path = "saved_audio/FolderName"
+    current_session_path = "Current_Session"
     sessions_folder = "saved_audio/Sessions"
 
     # Ensure the Sessions folder exists
     os.makedirs(sessions_folder, exist_ok=True)
 
     # Read the current number from FolderName
-    if os.path.exists(folder_name_path):
-        with open(folder_name_path, "r") as file:
+    if os.path.exists(current_session_path):
+        with open(current_session_path, "r") as file:
             try:
                 current_number = int(file.read().strip())
             except ValueError:
@@ -125,7 +124,7 @@ def makeSessionFolder():
     new_number = current_number + 1
 
     # Save the updated number back to FolderName
-    with open(folder_name_path, "w") as file:
+    with open(current_session_path, "w") as file:
         file.write(str(new_number))
 
     # Create a new folder for the session
