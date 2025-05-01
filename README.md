@@ -5,6 +5,7 @@ We'll be doing AI stuff in here
 The code is based on https://openai.github.io/openai-agents-python/voice/quickstart/
 - openai-agents[voice]'
 - soundfile
+- librosa
 - sounddevice==0.4.2
 - keyboard
 
@@ -64,6 +65,7 @@ pip install numpy==2.2.0
 pip install protobuf==3.17.3
 pip install soundfile
 pip install keyboard
+pip install librosa
 ```
 
 6) Get an OpenAPI key and export it into your path (DO NOT SHARE THIS KEY) https://platform.openai.com/docs/libraries?desktop-os=macOS#create-and-export-an-api-key

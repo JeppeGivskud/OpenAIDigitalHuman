@@ -14,6 +14,7 @@ from Audio import (
     save_audio_file,
     send_audio_to_audio2face_server,
     play_audio,
+    resample_audio,
 )
 import os
 from consolePrints import printLytter, printTænker, printClear
@@ -45,6 +46,9 @@ async def run_pipeline(
     while continue_conversation:
         """Runs the voice pipeline with recorded audio."""
 
+        user_samplerate = 24000
+        AI_samplerate = 22050
+
         user_audio = None
         ai_audio = None
 
@@ -52,15 +56,23 @@ async def run_pipeline(
         if InitiateConversation:
             # print("Loading pre-recorded audio...")
             user_audio = load_audio_file("saved_audio/User/Initiering.wav")
+            user_audio = resample_audio(user_audio, 24000, user_samplerate)
             printClear()
         else:
             # print("Recording audio... (Press the spacebar to stop recording)")
             user_audio = record_audio_while_pressed()
+            user_audio = resample_audio(user_audio, 24000, user_samplerate)
 
         # User done with speaking
-        save_audio_file(user_audio, sessionID, "user", saveAudio=saveAudio)
+        save_audio_file(
+            user_audio,
+            sessionID,
+            "user",
+            saveAudio=saveAudio,
+            samplerate=user_samplerate,
+        )
 
-        openai_audio_input = AudioInput(buffer=user_audio)
+        openai_audio_input = AudioInput(buffer=user_audio, frame_rate=user_samplerate)
 
         if useTokens:
             # print("Using tokens...")
@@ -75,6 +87,8 @@ async def run_pipeline(
                 url="localhost:50051",
             )
             InitiateConversation = False
+            ai_audio = resample_audio(ai_audio, 24000, AI_samplerate)
+
             # print("Response finished...", " Continue = ", continue_conversation)
         else:
             # print("Using recorded audio...")
@@ -82,14 +96,16 @@ async def run_pipeline(
             samplerate = 24000
 
         # AI done with generating audio
-        save_audio_file(ai_audio, sessionID, "rosie", saveAudio=saveAudio)
+        save_audio_file(
+            ai_audio, sessionID, "rosie", saveAudio=saveAudio, samplerate=AI_samplerate
+        )
 
         if renderFace:
             # print("Sending audio to Audio2Face...")
             printClear()
             send_audio_to_audio2face_server(
                 audio_data=ai_audio,
-                samplerate=24000,
+                samplerate=AI_samplerate,
                 instance_name="/World/audio2face/PlayerStreaming",
                 url="localhost:50051",
             )

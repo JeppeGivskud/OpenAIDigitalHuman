@@ -7,7 +7,14 @@ import sys
 import keyboard
 import csv
 import os
+import librosa
 from consolePrints import printLytter
+
+
+def resample_audio(audio, original_sr, target_sr):
+    print("Resampling audio from {} Hz to {} Hz".format(original_sr, target_sr))
+    resampled_audio = librosa.resample(audio, orig_sr=original_sr, target_sr=target_sr)
+    return resampled_audio
 
 
 def load_audio_file(file_path, samplerate=24000, channels=1):
@@ -143,13 +150,15 @@ def send_audio_to_audio2face_server(
     Sends audio data to the Audio2Face Streaming Audio Player via gRPC requests.
     """
     # Format the audio data
-    audio_data = format_audio_data(audio_data, samplerate)
 
+    audio_data = format_audio_data(audio_data, samplerate)
+    A2F_Samplerate = 16000
+    audio_data = resample_audio(audio_data, samplerate, A2F_Samplerate)
     # sd.play(audio_data, samplerate)    #for debugging
     # sd.wait()                          #for debugging
 
     # print("Sending Audio")
-    push_audio_track_stream(url, audio_data, samplerate, instance_name)
+    push_audio_track_stream(url, audio_data, A2F_Samplerate, instance_name)
 
 
 def int16_to_float32(audio: npt.NDArray[np.int16]) -> npt.NDArray[np.float32]:
