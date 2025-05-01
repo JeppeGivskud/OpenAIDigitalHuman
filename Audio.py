@@ -80,6 +80,15 @@ def play_audio(audio_data, samplerate=24000, channels=1):
     player.write(audio_data)
 
 
+def read_variable(path):
+    # Read the current value from the file
+    with open(path, "r") as file:
+        try:
+            return int(file.read().strip())
+        except ValueError:
+            return 1
+
+
 def record_audio_while_pressed(samplerate=24000, channels=1):
     """
     Records an audio clip as long as a button is pressed and returns it as a NumPy array.
@@ -94,14 +103,6 @@ def record_audio_while_pressed(samplerate=24000, channels=1):
     with open("recording_audio", "w") as file:
         file.write(str(1))
 
-    def read_variable(path):
-        # Read the current value from the file
-        with open(path, "r") as file:
-            try:
-                return int(file.read().strip())
-            except ValueError:
-                return 1
-
     # Create a buffer to store the recorded audio
     recorded_audio = []
     # Start the input stream
@@ -112,8 +113,10 @@ def record_audio_while_pressed(samplerate=24000, channels=1):
         while record == 1:
             Initiate = read_variable("initiate_conversation")
             record = read_variable("recording_audio")
+
             if Initiate == 1:
                 recorded_audio = load_audio_file("saved_audio/User/Initiering.wav")
+                return recorded_audio
             else:
                 # Read audio data from the stream
                 audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
@@ -127,14 +130,7 @@ def record_audio_while_pressed(samplerate=24000, channels=1):
             print("Recording audio...")
             print(record, Initiate)
 
-    with open("initiate_conversation", "w") as file:
-        file.write(str(0))
-
-    if Initiate == 1:
-        # print("Recording audio...")
-        return recorded_audio
-    else:
-        return trim_audio(np.concatenate(recorded_audio).flatten())
+    return trim_audio(np.concatenate(recorded_audio).flatten())
 
 
 def trim_audio(audio_data, sample_rate=24000, max_length_sec=15):
@@ -235,12 +231,12 @@ async def handle_audio_stream(
 
     audio = np.concatenate(incoming_response).flatten()
 
-    if InitiateConversation:
-        # print("Ready to Initiate Conversation - Press space to start")
-        printLytter()
-        while not (keyboard.is_pressed("space")):
-            if keyboard.is_pressed("space"):
-                # print("Initiating conversation...")
-                break
-
+    waiting = read_variable("recording_audio")
+    # print("Ready to Initiate Conversation - Press space to start")
+    printLytter()
+    print("Waiting for facilitator")
+    while waiting == 1:
+        waiting = read_variable("recording_audio")
+    with open("initiate_conversation", "w") as file:
+        file.write(str(0))
     return audio, continue_conversation
