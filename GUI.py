@@ -1,5 +1,4 @@
 import tkinter as tk
-from tkinter import messagebox
 import csv
 import os
 from datetime import datetime
@@ -53,19 +52,28 @@ def makeCSV():
 
 
 # Function to log actions
-def log_action(success, failure):
-    readCurrentSession()
+def log_action(success, failure, leaves):
+    # Log the action with a timestamp
     global ai_initiates, user_initiates, current_Session
+    readCurrentSession()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(csv_file, mode="a", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(
-            [timestamp, current_Session, ai_initiates, user_initiates, success, failure]
+            [
+                timestamp,
+                current_Session,
+                ai_initiates,
+                user_initiates,
+                success,
+                failure,
+                leaves,
+            ]
         )
     Condition = get_condition()
     update_status(
         f"""Logged \nSession={current_Session} \n\nCondition={Condition}
-        \nSuccess={success}, Failure={failure}"""
+        \nSuccess={success}, Failure={failure}, Leaves={leaves}"""
     )
 
 
@@ -74,23 +82,20 @@ def update_status(message):
     status_label.config(text=message)
 
 
-# GUI setup
-root = tk.Tk()
-root.title("Initiation User Logger")
-
-status_label = tk.Label(
-    root, text="Press a button to log an action.", wraplength=400, width=50
-)
-status_label.pack(pady=10)
-
-
 # Button actions
 def success():
-    log_action(1, 0)
+    log_action(1, 0, 0)
+    print("User talked")
 
 
 def failure():
-    log_action(0, 1)
+    log_action(0, 1, 0)
+    print("User Didn't talk")
+
+
+def leaves():
+    log_action(0, 0, 1)
+    print("User left")
 
 
 def get_condition():
@@ -108,11 +113,18 @@ def get_condition():
 def user_enters_zone_action():
     IncrementSession()
     Condition = get_condition()
+    global initiate_conversation_file
 
     if Condition == "AI initiates":
-        with open("initiate_conversation", "w") as file:
+        with open(initiate_conversation_file, "w") as file:
             file.write(str(1))
-
+    else:
+        with open(initiate_conversation_file, "w") as file:
+            file.write(str(0))
+    global current_Session
+    readCurrentSession()
+    print("User enters zone...")
+    print("Session", current_Session, ", ", Condition)
     update_status(
         f"""New User \nSession={current_Session} \n\nCondition={Condition}
         \n..."""
@@ -125,6 +137,15 @@ def stop_recording_action():
     with open("recording_audio", "w") as file:
         file.write(str(0))
 
+
+# GUI setup
+root = tk.Tk()
+root.title("Initiation User Logger")
+
+status_label = tk.Label(
+    root, text="Press a button to log an action.", wraplength=400, width=50
+)
+status_label.pack(pady=10)
 
 # Buttons
 user_enters_zone = tk.Button(
@@ -160,15 +181,22 @@ failure_button = tk.Button(
 )
 failure_button.pack(pady=10)
 
+leaves_button = tk.Button(
+    root,
+    text="leaves",
+    command=leaves,
+    bg="lightgreen",
+)
+leaves_button.pack(pady=10)
+
 
 ai_initiates = False
 user_initiates = False
 current_Session = 0
 Current_Session_File = "Current_Session"
-Current_Condition_File = "Current_Condition"
+initiate_conversation_file = "initiate_conversation"
 
 readCurrentSession()
 makeCSV()
-user_enters_zone_action()
 # Start GUI loop
 root.mainloop()

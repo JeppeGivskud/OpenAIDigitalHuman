@@ -26,7 +26,7 @@ def create_pipeline(agent: Agent):
         workflow=SingleAgentVoiceWorkflow(agent),
         config=VoicePipelineConfig(
             stt_settings=STTModelSettings(language="da"),
-            tts_settings=TTSModelSettings(voice="sage"),
+            tts_settings=TTSModelSettings(voice="sage", speed=1.0),
         ),
     )
 
@@ -120,15 +120,15 @@ def makeSessionFolder():
     else:
         current_number = 0
 
-    # Increment the number
+    """     # Increment the number
     new_number = current_number + 1
 
     # Save the updated number back to FolderName
     with open(current_session_path, "w") as file:
-        file.write(str(new_number))
+        file.write(str(new_number)) """
 
     # Create a new folder for the session
-    session_folder_path = os.path.join(sessions_folder, str(new_number))
+    session_folder_path = os.path.join(sessions_folder, str(current_number))
     os.makedirs(session_folder_path, exist_ok=True)
 
-    return new_number
+    return current_number

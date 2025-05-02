@@ -130,7 +130,10 @@ def record_audio_while_pressed(samplerate=24000, channels=1):
     return trim_audio(np.concatenate(recorded_audio).flatten())
 
 
-def trim_audio(audio_data, sample_rate=24000, max_length_sec=15):
+first_time = True  # Used to trim the audio only the first time the user initiates the conversation
+
+
+def trim_audio(audio_data, sample_rate=24000, max_length_sec=30):
     """
     Trims the audio data to a maximum length.
 
@@ -141,6 +144,11 @@ def trim_audio(audio_data, sample_rate=24000, max_length_sec=15):
     Returns:
         np.ndarray: The trimmed audio data.
     """
+    global first_time
+    if first_time:
+        first_time = False
+        max_length_sec = 5
+
     print(
         "Trimming audio to max length of ",
         max_length_sec,
