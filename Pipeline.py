@@ -92,6 +92,13 @@ async def run_pipeline(
                 instance_name="/World/audio2face/PlayerStreaming",
                 url="localhost:50051",
             )
+            reset_audio = load_audio_file("saved_audio/User/reset_face.wav")
+            send_audio_to_audio2face_server(
+                audio_data=reset_audio,
+                samplerate=24000,
+                instance_name="/World/audio2face/PlayerStreaming",
+                url="localhost:50051",
+            )
         else:
             # print("Playing audio locally...")
             play_audio(ai_audio)

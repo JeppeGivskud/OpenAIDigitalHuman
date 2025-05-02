@@ -147,7 +147,7 @@ def trim_audio(audio_data, sample_rate=24000, max_length_sec=30):
     global first_time
     if first_time:
         first_time = False
-        max_length_sec = 5
+        max_length_sec = 2
 
     print(
         "Trimming audio to max length of ",
@@ -239,7 +239,6 @@ async def handle_audio_stream(
     waiting = read_variable("recording_audio")
     # print("Ready to Initiate Conversation - Press space to start")
     printLytter()
-    print("Waiting for facilitator")
     while waiting == 1:
         waiting = read_variable("recording_audio")
     with open("initiate_conversation", "w") as file:
