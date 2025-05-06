@@ -1,0 +1,123 @@
+---
+title: "SuccessFailure"
+author: "Jgivsk"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Success failure experiment
+
+### Data loading
+
+```{r}
+
+file_list <- list.files(path = "../Participants_Actions/", pattern = "\\.csv$", full.names = TRUE)
+
+data_list <- lapply(file_list, function(file) {
+  read.csv(file, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+})
+all_data <- do.call(rbind, data_list)
+
+str(all_data)
+colnames(all_data)
+
+# Ensure logicals are treated properly
+all_data$`AI Initiates` <- as.logical(all_data$`AI Initiates`)
+all_data$`User Initiates` <- as.logical(all_data$`User Initiates`)
+all_data$Timestamp <- as.POSIXct(all_data$Timestamp)
+
+```
+
+
+```{r }
+
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+# Fix column names to remove spaces
+names(all_data) <- gsub(" ", "_", names(all_data))
+
+# Sum Success and Failure grouped by AI_Initiates
+plot_data <- all_data %>%
+  group_by(AI_Initiates) %>%
+  summarise(Success = sum(Success), Failure = sum(Failure)) %>%
+  pivot_longer(cols = c(Success, Failure), names_to = "Outcome", values_to = "Count")
+
+
+p <- ggplot(plot_data, aes(x = factor(AI_Initiates), y = Count, fill = Outcome)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Success/Failure by AI Initiation",
+    x = "AI Initiated", y = "Count",
+    caption = paste0("Proportion test p-value: ")
+  ) +
+  scale_fill_manual(values = c("Success" = "steelblue", "Failure" = "tomato")) +
+  scale_y_continuous(breaks = seq(0, max(plot_data$Count), by = 1)) +  # More y-axis ticks
+  theme_minimal()
+
+ggsave("plots/SuccessFailure by AI Initiation.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+
+p
+```
+
+```{r plot_by_index, fig.height=3, fig.width=8}
+# Sort by time and add index
+all_data <- all_data %>%
+  arrange(Timestamp) %>%
+  mutate(EventIndex = row_number(),
+         Outcome = case_when(
+           Success == 1 ~ "Success",
+           Failure == 1 ~ "Failure",
+           TRUE ~ "Unknown"
+         ))
+# Plot
+p <- ggplot(all_data, aes(x = EventIndex, y = 1, color = Outcome)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("Success" = "steelblue", "Failure" = "tomato")) +
+  labs(
+    title = "Session Outcomes in Sequence",
+    x = "Session Index",
+    y = "",
+    color = "Outcome"
+  ) +
+    scale_x_continuous(breaks = seq(0, max(all_data$EventIndex), by = 4)) +  # More y-axis ticks# More x-axis ticks
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.grid.major.y = element_blank())
+
+ggsave("plots/Session Outcomes in Sequence.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+
+p
+```
+
+
+```{r}
+t.test(Success ~ AI_Initiates, data = all_data)
+```
+
+```{r}
+# Count successes and total for each group
+table_data <- all_data %>%
+  group_by(AI_Initiates) %>%
+  summarise(Successes = sum(Success), Trials = n())
+
+# Run proportion test
+prop_test <- prop.test(x = table_data$Successes, n = table_data$Trials)
+
+p_val <- prop_test$p.value
+
+# Create a data frame for the results
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated"),
+  Successes = table_data$Successes,
+  Trials = table_data$Trials,
+  Proportion = table_data$Successes / table_data$Trials
+)
+# Print the results
+print(results_df)
+```

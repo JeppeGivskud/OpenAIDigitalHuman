@@ -8,3 +8,4 @@ env
 *.csv
 *.pt
 !Initiering.wav
+.Rproj.user
