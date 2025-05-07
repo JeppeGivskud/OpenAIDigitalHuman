@@ -69,7 +69,7 @@ p
 #### Session success over time
 ```{r plot_by_index, fig.height=3, fig.width=8}
 # Sort by time and add index
-all_data <- all_data %>%
+plot_data <- all_data %>%
   arrange(Timestamp) %>%
   mutate(EventIndex = row_number(),
          Outcome = case_when(
@@ -78,7 +78,7 @@ all_data <- all_data %>%
            TRUE ~ "Unknown"
          ))
 # Plot
-p <- ggplot(all_data, aes(x = EventIndex, y = 1, color = Outcome)) +
+p <- ggplot(plot_data, aes(x = EventIndex, y = 1, color = Outcome)) +
   geom_point(size = 3) +
   scale_color_manual(values = c("Success" = "steelblue", "Failure" = "tomato")) +
   labs(
@@ -87,7 +87,7 @@ p <- ggplot(all_data, aes(x = EventIndex, y = 1, color = Outcome)) +
     y = "",
     color = "Outcome"
   ) +
-    scale_x_continuous(breaks = seq(0, max(all_data$EventIndex), by = 4)) +  # More y-axis ticks# More x-axis ticks
+    scale_x_continuous(breaks = seq(0, max(plot_data$EventIndex), by = 4)) +  # More y-axis ticks# More x-axis ticks
   theme_minimal() +
   theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
@@ -102,10 +102,63 @@ p
 
 Understanding whether the condition changed user behavior is done by finding the ratio of success to failure in both conditions as well as their dispersion.
 
-```{r}
+``` {r}
+analyze <- function(successes, failures) {
+  n <- successes + failures
+  p <- successes / n
+  sd <- sqrt(p * (1 - p) / n)
+  ci_low <- p - 1.96 * sd
+  ci_high <- p + 1.96 * sd
+  return(list(
+    success_rate = p,
+    sd = sd,
+    ci_95 = c(ci_low, ci_high)
+  ))
+}
 
+# Summarize data into success and failures
+successes <- c(sum(all_data$Success[all_data$AI_Initiates == TRUE]), sum(all_data$Success[all_data$AI_Initiates == FALSE]))
+
+failures <- c(sum(all_data$Failure[all_data$AI_Initiates == TRUE]), sum(all_data$Failure[all_data$AI_Initiates == FALSE]))
+
+
+ai_result <- analyze(successes[1], failures[1])
+
+user_result <- analyze(successes[2], failures[2])
+
+print(ai_result)
+print(user_result)
+
+# Create a data frame for the results
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated"),
+  Successes = successes,
+  Failures = failures,
+  Success_Rate = c(ai_result$success_rate, user_result$success_rate),
+  SD = c(ai_result$sd, user_result$sd),
+  CI_Low = c(ai_result$ci_95[1], user_result$ci_95[1]),
+  CI_High = c(ai_result$ci_95[2], user_result$ci_95[2])
+)
+# Print the results
+print(results_df)
+
+# plot the results with confidence interval
+p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
+  scale_y_continuous(limits = c(-0.5, 1)) +
+  labs(
+    title = "Success Rate by AI Initiation",
+    x = "Condition",
+    y = "Success Rate"
+  ) +
+  theme_minimal()
+p
+ggsave("plots/Success Rate by AI Initiation.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
 ```
 
+
+# Not used
 
 ```{r}
 t.test(Success ~ AI_Initiates, data = all_data)
