@@ -14,6 +14,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Data loading
 
 ```{r}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
 
 file_list <- list.files(path = "../Participants_Actions/", pattern = "\\.csv$", full.names = TRUE)
 
@@ -30,16 +33,15 @@ all_data$`AI Initiates` <- as.logical(all_data$`AI Initiates`)
 all_data$`User Initiates` <- as.logical(all_data$`User Initiates`)
 all_data$Timestamp <- as.POSIXct(all_data$Timestamp)
 
-```
-
-
-```{r }
-
-library(ggplot2)
-library(tidyr)
-library(dplyr)
 # Fix column names to remove spaces
 names(all_data) <- gsub(" ", "_", names(all_data))
+
+```
+
+### Plots
+
+#### Raw data
+```{r }
 
 # Sum Success and Failure grouped by AI_Initiates
 plot_data <- all_data %>%
@@ -64,6 +66,7 @@ ggsave("plots/SuccessFailure by AI Initiation.png", plot = p, width = 8, height 
 p
 ```
 
+#### Session success over time
 ```{r plot_by_index, fig.height=3, fig.width=8}
 # Sort by time and add index
 all_data <- all_data %>%
@@ -93,6 +96,14 @@ p <- ggplot(all_data, aes(x = EventIndex, y = 1, color = Outcome)) +
 ggsave("plots/Session Outcomes in Sequence.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
 
 p
+```
+
+### Statistical analysis
+
+Understanding whether the condition changed user behavior is done by finding the ratio of success to failure in both conditions as well as their dispersion.
+
+```{r}
+
 ```
 
 
