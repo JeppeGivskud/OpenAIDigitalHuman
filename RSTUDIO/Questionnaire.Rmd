@@ -1,0 +1,294 @@
+---
+title: "Questionnaire data" 
+author: "Jgivsk, Skth, Rdha" 
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load libraries
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+```
+# Load data
+```{r include = FALSE} 
+# Load the data
+data <- read.csv("./data/Questionnaire_data.csv")
+# Display the first few rows of the data
+head(data)
+```
+# Demographics
+```{r}
+df <- data %>%
+  select(Condition, Køn) %>%
+  mutate(Køn = factor(Køn, levels = c("Male", "Female")))
+# Create a histogram (or rather a bar plot, since Køn is categorical)
+p <- ggplot(df, aes(x = Køn,fill = Condition)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Gender by Condition (AI initiated vs User initiated)", x = "Gender", y = "Antal") +
+  scale_fill_manual(values = c(
+  "AI" = "steelblue",
+  "User" = "tomato")) +
+  theme_minimal()
+# Show plot
+p
+
+# Save plot
+ggsave(filename = paste0("plots/","Questionnaire_Gender",".png"), plot = p, width = 10, height = 6, dpi = 300, bg = "white")
+
+
+
+df <- data %>%
+  select(Condition, Alder) %>%
+  mutate(Alder = factor(Alder, levels = c("21-25","26-30")))
+# Create a histogram (or rather a bar plot, since Age is categorical)
+p <- ggplot(df, aes(x = Alder,fill = Condition)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Age by Condition (AI initiated vs User initiated)", x = "Age", y = "Antal") +
+  scale_fill_manual(values = c(
+  "AI" = "steelblue",
+  "User" = "tomato")) +
+  theme_minimal()
+# Show plot
+p
+
+ggsave(filename = paste0("plots/","Questionnaire_Age",".png"), plot = p, width = 10, height = 6, dpi = 300, bg = "white")
+
+```
+
+
+```{r}
+
+# Load your data
+data <- read.csv("./data/AI_usage_data.csv", dec = ",")
+data
+# Define your labels
+my.labels <- c(
+  "ChatGPT",	"Google Gemini",	"Siri",	"Microsoft Copilot",	"GitHub Copilot", 	"GrammalyGO",	"CanvaAI",	"I do not use AI", 	"Other"
+)
+# Manually create the dataframe
+df <- tibble::tibble(
+  Group = c("AI", "User"),
+  ChatGPT = c(9, 8),
+  Google_Gemini = c(0, 3),
+  Siri = c(2, 0),
+  Microsoft_Copilot = c(1, 2),
+  GitHub_Copilot = c(2, 1),
+  GrammarlyGO = c(0, 0),
+  CanvaAI = c(1, 0)
+)
+
+# Pivot longer for ggplot
+df_long <- df %>%
+  pivot_longer(cols = -Group, names_to = "Tool", values_to = "Count")
+
+# Reorder Tool levels based on total count (descending)
+df_long <- df_long %>%
+  group_by(Tool) %>%
+  mutate(TotalCount = sum(Count)) %>%
+  ungroup() %>%
+  mutate(Tool = reorder(Tool, -TotalCount))
+df_long
+# Plot
+p <- ggplot(df_long, aes(x = Tool, y = Count, fill = Group)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width=0.8) +
+  labs(title = "AI Tools Usage by Group", x = "Tool", y = "Count") +
+  theme_minimal() +
+  scale_y_continuous(breaks = seq(0, 10, 1)) +
+  scale_fill_manual(values = c(
+  "AI" = "steelblue",
+  "User" = "tomato")) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top",
+    panel.grid.major = element_line(color = "grey80"),
+    panel.grid.minor = element_line(color = "grey90")
+  )
+# Save the plot
+ggsave(filename = "plots/Questionnaire_AI_usage_by_group.png", plot = p, width = 10, height = 6, dpi = 300, bg = "white")
+
+# Show plot
+p
+```
+
+# Questionnaire
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+Questionnaire_plot <- function(data, questions, columns, title, title_offset) {
+  
+  # Prepare the data
+  Engagement <- data %>%
+    select(Condition, all_of(columns)) %>%
+    mutate(Condition = factor(Condition, levels = c("AI", "User"))) %>%
+    mutate(across(2:ncol(.), as.numeric))
+  
+  # Pivot longer
+  Engagement_long <- Engagement %>%
+    pivot_longer(cols = -Condition, 
+                 names_to = "Question", 
+                 values_to = "Score") %>%
+    mutate(Question = factor(Question, levels = unique(Question)))
+  
+  # Plot
+  p <- ggplot(Engagement_long, aes(x = Question, y = Score, fill = Condition)) +
+    stat_summary(fun = mean, geom = "bar", position = position_dodge()) +
+    labs(title = title, 
+         x = "", y = "Average Score") +
+    stat_summary(fun = mean, 
+                 geom = "text", 
+                 aes(label = round(..y.., 2)),  
+                 position = position_dodge(width = 0.9), 
+                 vjust = 0.4, hjust = 1.2, size = 3.5) +
+    scale_x_discrete(labels = questions) +
+    scale_fill_manual(values = c(
+                  "AI" = "steelblue",
+                  "User" = "tomato")) +
+    theme_minimal() +
+    theme(legend.position = "top",panel.grid.minor = element_line(color = "grey78")) + 
+    coord_flip()
+  
+  # Save plot
+  ggsave(filename = paste0("plots/","Questionnaire_",title, ".png"), plot = p, width = 10, height = 6, dpi = 300, bg = "white")
+  
+  # Return plot
+  return(p)
+}
+
+```
+
+```{r}
+
+# Load your data
+data <- read.csv("./data/Questionnaire_data.csv", dec = ",")
+
+# Define your labels
+my.labels <- c(
+  "I hvilken grad følte du dig mentalt fordybet i oplevelsen? \n(1 = Slet ikke, 7 Rigtig meget)",  
+  "Hvor involverende var oplevelsen? \n(1 = Slet ikke, 7 Rigtig meget)",  
+  "Hvor fuldstændigt blev dine sanser engageret? \n(1 = Slet ikke, 7 Rigtig meget)",  
+  "I hvilken grad oplevede du en følelse af virkelighed?\n(1 = Slet ikke, 7 Rigtig meget)",  
+  "Hvor engagerende var samtalen? \n(1 = Slet ikke, 7 Rigtig meget)",  
+  "Hvor afslappende eller spændende var oplevelsen? \n(1 = Meget afslappende, 7 Meget spændende)"
+)
+
+# Call the function
+Questionnaire_plot(data, questions = my.labels, columns = 6:11, title = "Average Engagement per question by Condition",title_offset=0)
+```
+
+```{r}
+
+# Load your data
+data <- read.csv("./data/Questionnaire_data.csv", dec = ",")
+
+# Define your labels
+my.labels <- c(
+  "Brugen af ROSIE i mit projekt \nville gøre mig i stand til at udføre opgaver hurtigere \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Brugen af ROSIE ville kunne forbedre min arbejdspræstation \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Brugen af ROSIE i mit arbejde ville øge min produktivitet. \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Brugen af ROSIE ville forbedre min evne til at udføre \nmit arbejde godt. \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Brugen af ROSIE ville gøre det \nlettere at udføre mit arbejde. \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Jeg synes at ROSIE ville være nyttig i mit arbejde. \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)"
+)
+
+# Call the function
+Questionnaire_plot(data, questions = my.labels, columns = 6:11, title = "Perceived usefulness per question by Condition",title_offset=0)
+```
+
+```{r}
+
+# Load your data
+data <- read.csv("./data/Questionnaire_data.csv", dec = ",")
+
+# Define your labels
+my.labels <- c(
+  "Det ville være nemt for mig at lære at betjene ROSIE \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Jeg ville have nemt ved at få ROSIE \ntil at gøre hvad jeg ville have hende til at gøre \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Min interaktion med ROSIE ville være tydelig og forståelig \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Jeg kunne forestille mig, at ROSIE ville være tydelig og forståelig \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Det ville være nemt for mig at blive dygtig til at bruge ROSIE \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)",  
+  "Jeg kunne forestille mig, at ROSIE ville være nem at bruge \n(1 = Meget usandsynligt, 7 = Meget sandsynligt)"
+)
+
+# Call the function
+Questionnaire_plot(data, questions = my.labels, columns = 6:11, title = " Perceived Ease of Use (PEU) per question by Condition",title_offset=-0.6)
+```
+
+```{r}
+
+# Load your data
+data <- read.csv("./data/Questionnaire_data.csv", dec = ",")
+
+Intention_To_use_data <- data %>%
+  select(Condition, 27) %>%
+  mutate(Condition = factor(Condition, levels = c("AI", "User"))) %>%
+  mutate(across(2:ncol(.), as.numeric))
+
+# Pivot longer
+Intention_To_use_data_long <- Intention_To_use_data %>%
+  pivot_longer(cols = -Condition, 
+               names_to = "Question", 
+               values_to = "Score") %>%
+  mutate(Question = factor(Question, levels = unique(Question)))
+Intention_To_use_data_long
+
+# T-test
+t_test_result <- t.test(Intention_To_use_data_long$Score ~ Intention_To_use_data_long$Condition)
+
+IntentiontoUsewithPvalueString <- paste("Intention to use (p =", round(t_test_result$p.value, 3), ")")
+
+
+Engagement_data <- data %>%
+  select(Condition, 12) %>%
+  mutate(Condition = factor(Condition, levels = c("AI", "User"))) %>%
+  mutate(across(2:ncol(.), as.numeric))
+
+# Pivot longer
+Engagement_data_long <- Engagement_data %>%
+  pivot_longer(cols = -Condition, 
+               names_to = "Question", 
+               values_to = "Score") %>%
+  mutate(Question = factor(Question, levels = unique(Question)))
+Engagement_data_long
+
+# T-test
+t_test_result <- t.test(Engagement_data_long$Score ~ Engagement_data_long$Condition)
+
+EngagementwithPvalueString <- paste("Engagement (p =", round(t_test_result$p.value, 3), ")")
+
+
+
+# Define your labels
+my.labels <- c(
+  EngagementwithPvalueString,  
+  "Percieved usefulness",  
+  "Perceived Ease of Use (PEU)",
+  IntentiontoUsewithPvalueString
+  
+)
+# Call the function
+Questionnaire_plot(data, questions = my.labels, columns = c(12,19,26,27), title = "Scores for each construct",title_offset = 0.4)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

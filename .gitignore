@@ -9,3 +9,7 @@ env
 *.pt
 !Initiering.wav
 .Rproj.user
+initiate_conversation
+recording_audio
+Current_Session
+*.png
