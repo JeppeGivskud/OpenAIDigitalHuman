@@ -156,32 +156,37 @@ p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
 p
 ggsave("plots/Success Rate by AI Initiation.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
 ```
+### Statistical analysis
 
-
-# Not used
-
+As we have realatively little data we will perform a fishers exact test 
 ```{r}
-t.test(Success ~ AI_Initiates, data = all_data)
+# Create a contingency table
+contingency_table <- matrix(c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE]), 
+  sum(all_data$Failure[all_data$AI_Initiates == TRUE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE]), 
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE])
+), nrow = 2, byrow = TRUE)
+rownames(contingency_table) <- c("AI Initiated", "User Initiated")
+colnames(contingency_table) <- c("Success", "Failure")
+# Perform Fisher's exact test
+fisher_test_result <- fisher.test(contingency_table)
+print(fisher_test_result)
+
 ```
-
+We will also perform a chi-squared test
 ```{r}
-# Count successes and total for each group
-table_data <- all_data %>%
-  group_by(AI_Initiates) %>%
-  summarise(Successes = sum(Success), Trials = n())
-
-# Run proportion test
-prop_test <- prop.test(x = table_data$Successes, n = table_data$Trials)
-
-p_val <- prop_test$p.value
-
-# Create a data frame for the results
-results_df <- data.frame(
-  Group = c("AI Initiated", "User Initiated"),
-  Successes = table_data$Successes,
-  Trials = table_data$Trials,
-  Proportion = table_data$Successes / table_data$Trials
-)
-# Print the results
-print(results_df)
+# Create a contingency table
+contingency_table <- matrix(c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE]), 
+  sum(all_data$Failure[all_data$AI_Initiates == TRUE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE]), 
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE])
+), nrow = 2, byrow = TRUE)
+rownames(contingency_table) <- c("AI Initiated", "User Initiated")
+colnames(contingency_table) <- c("Success", "Failure")
+# Perform Chi-squared test
+chi_squared_test_result <- chisq.test(contingency_table)
+print(chi_squared_test_result)
+print(contingency_table)
 ```
