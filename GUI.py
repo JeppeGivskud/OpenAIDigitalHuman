@@ -47,6 +47,7 @@ def makeCSV():
                     "User Initiates",
                     "Success",
                     "Failure",
+                    "Leaves",
                 ]
             )
 
