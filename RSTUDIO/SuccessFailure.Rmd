@@ -31,6 +31,7 @@ colnames(all_data)
 # Ensure logicals are treated properly
 all_data$`AI Initiates` <- as.logical(all_data$`AI Initiates`)
 all_data$`User Initiates` <- as.logical(all_data$`User Initiates`)
+all_data$`Asks for Help` <- as.logical(all_data$`Asks for Help`)
 all_data$Timestamp <- as.POSIXct(all_data$Timestamp)
 
 # Fix column names to remove spaces
@@ -40,47 +41,67 @@ names(all_data) <- gsub(" ", "_", names(all_data))
 
 ### Plots
 
-#### Raw data
-```{r }
+#### Bar graph
 
-# Sum Success and Failure grouped by AI_Initiates
+```{r}
+# Create combined outcome and label AI Initiates as descriptive factor
 plot_data <- all_data %>%
-  group_by(AI_Initiates) %>%
-  summarise(Success = sum(Success), Failure = sum(Failure)) %>%
-  pivot_longer(cols = c(Success, Failure), names_to = "Outcome", values_to = "Count")
+  pivot_longer(cols = c(Success, Failure), names_to = "Outcome", values_to = "Count") %>%
+  group_by(AI_Initiates, Outcome, Asks_for_Help) %>%
+  summarise(Count = sum(Count), .groups = "drop") %>%
+  mutate(
+    Combined = case_when(
+      Outcome == "Success" & Asks_for_Help == 0 ~ "Success (No Help)",
+      Outcome == "Success" & Asks_for_Help == 1 ~ "Success (Asked Help)",
+      Outcome == "Failure" & Asks_for_Help == 0 ~ "Failure (No Help)",
+      Outcome == "Failure" & Asks_for_Help == 1 ~ "Failure (Asked Help)"
+    ),
+    AI_Initiates_Label = factor(AI_Initiates, levels = c(0, 1), labels = c("User Initiated", "AI Initiated"))
+  )
 
-
-p <- ggplot(plot_data, aes(x = factor(AI_Initiates), y = Count, fill = Outcome)) +
-  geom_bar(stat = "identity", position = "dodge") +
+# Plot stacked bars by Combined
+p <- ggplot(plot_data, aes(x = AI_Initiates_Label, y = Count, fill = Combined)) +
+  geom_bar(stat = "identity", position = "stack") +
+  facet_wrap(~Outcome) +
+  scale_fill_manual(values = c(
+    "Success (No Help)" = "steelblue",
+    "Success (Asked Help)" = "blue",
+    "Failure (No Help)" = "tomato",
+    "Failure (Asked Help)" = "tomato"
+  )) +
   labs(
-    title = "Success/Failure by AI Initiation",
-    x = "AI Initiated", y = "Count",
-    caption = paste0("Proportion test p-value: ")
+    title = "Success/Failure by Initiator and Help Request (Colored by Help + Outcome)",
+    x = "Who Initiated",
+    y = "Count",
+    fill = "Outcome + Help"
   ) +
-  scale_fill_manual(values = c("Success" = "steelblue", "Failure" = "tomato")) +
-  scale_y_continuous(breaks = seq(0, max(plot_data$Count), by = 1)) +  # More y-axis ticks
+  scale_y_continuous(breaks = seq(0, max(plot_data$Count), by = 1)) +
   theme_minimal()
 
-ggsave("plots/SuccessFailure by AI Initiation.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+ggsave("plots/SuccessFailure_Stacked_by_Help_and_Outcome_Labelled.png", plot = p, width = 8, height = 4, dpi = 300, bg = "white")
 
 p
 ```
 
 #### Session success over time
 ```{r plot_by_index, fig.height=3, fig.width=8}
-# Sort by time and add index
 plot_data <- all_data %>%
   arrange(Timestamp) %>%
-  mutate(EventIndex = row_number(),
-         Outcome = case_when(
-           Success == 1 ~ "Success",
-           Failure == 1 ~ "Failure",
-           TRUE ~ "Unknown"
-         ))
+  mutate(
+    EventIndex = row_number(),
+    Outcome = case_when(
+      Success == 1 & User_Initiates == 1 ~ "Success User",
+      Success == 1 & AI_Initiates == 1 ~ "Success AI",
+      Failure == 1 & User_Initiates == 1 ~ "Failure User",
+      Failure == 1 & AI_Initiates == 1 ~ "Failure AI",
+      TRUE ~ "Unknown"
+    )
+  )
+
 # Plot
 p <- ggplot(plot_data, aes(x = EventIndex, y = 1, color = Outcome)) +
   geom_point(size = 3) +
-  scale_color_manual(values = c("Success" = "steelblue", "Failure" = "tomato")) +
+  scale_color_manual(values = c("Success User" = "steelblue","Success AI" = "cyan", "Failure User" = "tomato","Failure AI" = "brown", "Unknown"= "grey")) +
   labs(
     title = "Session Outcomes in Sequence",
     x = "Session Index",
