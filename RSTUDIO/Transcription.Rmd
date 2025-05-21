@@ -1,0 +1,85 @@
+---
+title: "Transcription"
+author: "Jgivsk, Skth, Rdha"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load and Explore Data
+
+```{r load-data}
+# Load necessary libraries
+library(tidyverse)
+
+# Load the data
+data <- read.csv("./data/Transcription_data.csv")
+
+data
+```
+
+## Define Analysis Function
+
+```{r define-function}
+analyze_variable <- function(data, variable_name) {
+  # Filter rows for the specified variable and "AI Initiated"
+  data_filtered <- data %>%
+    filter(Variable %in% c(variable_name, "AI Initiated")) %>%
+    pivot_wider(names_from = Variable, values_from = Value)
+  
+  # Convert columns to appropriate types
+  data_filtered <- data_filtered %>%
+    mutate(
+      !!variable_name := as.numeric(gsub(" chars", "", data_filtered[[variable_name]])),
+      `AI Initiated` = as.factor(data_filtered[["AI Initiated"]])
+    )
+  
+  # Perform a t-test
+  t_test_result <- t.test(
+    data_filtered[[variable_name]] ~ data_filtered[["AI Initiated"]]
+  )
+  print(t_test_result)
+  
+  # Visualize the results
+  p <- ggplot(data_filtered, aes(x = `AI Initiated`, y = data_filtered[[variable_name]])) +
+    geom_boxplot() +
+    labs(
+      title = paste(variable_name, "by AI Initiated"),
+      x = "AI Initiated",
+      y = variable_name
+    )
+  p
+  # Save the plot
+  ggsave(
+    filename = paste0("plots/Transcription_", variable_name, ".png"),
+     plot = p, width = 10, height = 6, dpi = 300, bg = "white"
+  )
+}
+```
+
+## Sentence Length
+
+```{r example-usage}
+# Analyze "Average Sentence Length of User"
+analyze_variable(data, "Average Sentence Length of User")
+```
+## Time of conversation
+
+```{r example-usage}
+# Analyze "Average Sentence Length of User"
+analyze_variable(data, "Difference in Seconds")
+```
+
+## Total Turns
+
+```{r example-usage}
+# Analyze "Average Sentence Length of User"
+analyze_variable(data, "Difference in Seconds")
+```
+
+
+
+
