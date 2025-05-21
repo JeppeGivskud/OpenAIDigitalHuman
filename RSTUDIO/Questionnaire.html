@@ -623,8 +623,19 @@ Intention_To_use_data_long</code></pre>
 ## 18 User      Intention.of.use.Score  5.25</code></pre>
 <pre class="r"><code># T-test
 t_test_result &lt;- t.test(Intention_To_use_data_long$Score ~ Intention_To_use_data_long$Condition)
-
-IntentiontoUsewithPvalueString &lt;- paste(&quot;Intention to use (p =&quot;, round(t_test_result$p.value, 3), &quot;)&quot;)
+t_test_result</code></pre>
+<pre><code>## 
+##  Welch Two Sample t-test
+## 
+## data:  Intention_To_use_data_long$Score by Intention_To_use_data_long$Condition
+## t = 0.72939, df = 15.035, p-value = 0.477
+## alternative hypothesis: true difference in means between group AI and group User is not equal to 0
+## 95 percent confidence interval:
+##  -0.6021177  1.2287844
+## sample estimates:
+##   mean in group AI mean in group User 
+##           5.202222           4.888889</code></pre>
+<pre class="r"><code>IntentiontoUsewithPvalueString &lt;- paste(&quot;Intention to use (p =&quot;, round(t_test_result$p.value, 3), &quot;)&quot;)
 
 
 Engagement_data &lt;- data %&gt;%
@@ -662,8 +673,19 @@ Engagement_data_long</code></pre>
 ## 18 User      Score...Engagement  2.83</code></pre>
 <pre class="r"><code># T-test
 t_test_result &lt;- t.test(Engagement_data_long$Score ~ Engagement_data_long$Condition)
-
-EngagementwithPvalueString &lt;- paste(&quot;Engagement (p =&quot;, round(t_test_result$p.value, 3), &quot;)&quot;)
+t_test_result</code></pre>
+<pre><code>## 
+##  Welch Two Sample t-test
+## 
+## data:  Engagement_data_long$Score by Engagement_data_long$Condition
+## t = 1.1411, df = 15.962, p-value = 0.2707
+## alternative hypothesis: true difference in means between group AI and group User is not equal to 0
+## 95 percent confidence interval:
+##  -0.3184633  1.0606855
+## sample estimates:
+##   mean in group AI mean in group User 
+##           4.276667           3.905556</code></pre>
+<pre class="r"><code>EngagementwithPvalueString &lt;- paste(&quot;Engagement (p =&quot;, round(t_test_result$p.value, 3), &quot;)&quot;)
 
 
 

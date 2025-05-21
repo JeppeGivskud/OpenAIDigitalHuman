@@ -243,6 +243,7 @@ Intention_To_use_data_long
 
 # T-test
 t_test_result <- t.test(Intention_To_use_data_long$Score ~ Intention_To_use_data_long$Condition)
+t_test_result
 
 IntentiontoUsewithPvalueString <- paste("Intention to use (p =", round(t_test_result$p.value, 3), ")")
 
@@ -262,6 +263,7 @@ Engagement_data_long
 
 # T-test
 t_test_result <- t.test(Engagement_data_long$Score ~ Engagement_data_long$Condition)
+t_test_result
 
 EngagementwithPvalueString <- paste("Engagement (p =", round(t_test_result$p.value, 3), ")")
 
