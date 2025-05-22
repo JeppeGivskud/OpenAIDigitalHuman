@@ -1,0 +1,532 @@
+---
+title: "SuccessFailure"
+author: "Jgivsk, Skth, Rdha"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Success failure experiment
+
+## Data loading
+We load the data files from the participants actions folder.
+
+The data is in the format of a csv file with the following columns:
+- `Timestamp`: The time the action was taken
+- `Session`: The session (participant number)
+- `AI Initiates`: Whether the AI initiated the action
+- `User Initiates`: Whether the user initiated the action
+- `Success`: Whether the interaction was successful
+- `Failure`: Whether the interaction failed
+- `Leaves`: Whether the user left the session before satisfactory interaction
+- `Asks for Help`: Whether the user asked facilitators for help
+
+
+```{r}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+
+file_list <- list.files(path = "../Participants_Actions/", pattern = "\\.csv$", full.names = TRUE)
+
+data_list <- lapply(file_list, function(file) {
+  read.csv(file, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+})
+all_data <- do.call(rbind, data_list)
+
+# Clean up the data
+colnames(all_data) <- gsub(" ", "_", colnames(all_data))
+
+
+
+## Ensure logicals are treated properly
+all_data$AI_Initiates <- as.logical(all_data$AI_Initiates)
+all_data$User_Initiates <- as.logical(all_data$User_Initiates)
+all_data$Success <- as.logical(all_data$Success)
+all_data$Failure <- as.logical(all_data$Failure)
+all_data$Leaves <- as.logical(all_data$Leaves)
+all_data$Asks_for_Help <- as.logical(all_data$Asks_for_Help)
+
+## Convert Timestamp to POSIXct
+all_data$Timestamp <- as.POSIXct(all_data$Timestamp)
+
+## Show the structure of the data
+str(all_data)
+colnames(all_data)
+```
+
+
+
+## Plan
+
+The experiment was conducted over multiple sessions with slight changes in experimental setup and criteria for participation in the experiment as this was refined over time as can be read in the report.
+```{r} 
+sessions <- length(data_list)
+
+session_sizes <- sapply(data_list, nrow)
+
+session_hours <- sapply(data_list, function(df) {
+  as.numeric(difftime(df$Timestamp[nrow(df)], df$Timestamp[1], units = "hours"))
+})
+session_hours <- round(session_hours, 2)
+
+
+# Create a data frame with one row per session
+session_data <- data.frame(
+  Session = 1:sessions,
+  Session_size = session_sizes,
+  Session_hours = session_hours
+)
+
+session_data
+
+``` 
+
+## Plots
+
+The raw data for each session can be seen below
+
+#### Session success over time
+```{r plot_by_index, fig.height=3, fig.width=10}
+
+# Calculate the start index of each session
+session_starts <- c(1, cumsum(session_sizes) + 1)
+session_starts <- session_starts[-length(session_starts)]  # Remove the last over-count
+
+# Optional: create session labels
+session_labels <- paste("Session - ", 1:length(session_sizes)," - ", session_hours, "Hours")
+
+# Plot as before
+plot_data <- all_data %>%
+  arrange(Timestamp) %>%
+  mutate(
+    EventIndex = row_number(),
+    Outcome = case_when(
+      Success == 1 & User_Initiates == 1 ~ "Success User",
+      Success == 1 & AI_Initiates == 1 ~ "Success AI",
+      Failure == 1 & User_Initiates == 1 ~ "Failure User",
+      Failure == 1 & AI_Initiates == 1 ~ "Failure AI",
+      TRUE ~ "Unknown"
+    )
+  )
+
+p <- ggplot(plot_data, aes(x = EventIndex, y = 1, color = Outcome)) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = session_starts, linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_text(data = data.frame(x = session_starts, y = 1.08, label = session_labels),
+            aes(x = x, y = y, label = label),
+            inherit.aes = FALSE, angle = 90, vjust = 1.2, size = 3) +  # changed vjust for better centering
+  scale_color_manual(values = c("Success User" = "steelblue", "Success AI" = "cyan",
+                                "Failure User" = "tomato", "Failure AI" = "brown",
+                                "Unknown" = "grey")) +
+  labs(
+    title = "Session Outcomes in Sequence",
+    x = "Session Index",
+    y = "",
+    color = "Outcome"
+  ) +
+  scale_x_continuous(breaks = seq(0, max(plot_data$EventIndex), by = 10)) +
+  expand_limits(y = c(0.95, 1.15)) +  # Expand y limits slightly
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.grid.major.y = element_blank())
+
+ggsave("plots/Session_Outcomes_with_Session_Markers.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+
+p
+
+```
+#### Bar graph
+
+The data is a litle misleading as the facilitaros have introduced an error into the data. Whenever users was presented the "User initiated" condition they were often not sure on how to interact with the agent. Therefore they came to the facilitators and the facilitators said "Just say hi". This was not ideal but was done to gain more qualitative data into the experience of initiation or not initiating a conversation. However these people could have been either successes or failures and the exact outcome could no longer be recorded as now all the participants just became successes.
+
+```{r}
+# Create combined outcome and label AI Initiates as descriptive factor
+plot_data <- all_data %>%
+  pivot_longer(cols = c(Success, Failure), names_to = "Outcome", values_to = "Count") %>%
+  group_by(AI_Initiates, Outcome, Asks_for_Help) %>%
+  summarise(Count = sum(Count), .groups = "drop") %>%
+  mutate(
+    Combined = case_when(
+      Outcome == "Success" & Asks_for_Help == 0 ~ "Success (No Help)",
+      Outcome == "Success" & Asks_for_Help == 1 ~ "Success (Asked Help)",
+      Outcome == "Failure" & Asks_for_Help == 0 ~ "Failure (No Help)",
+      Outcome == "Failure" & Asks_for_Help == 1 ~ "Failure (Asked Help)"
+    ),
+    AI_Initiates_Label = factor(AI_Initiates, levels = c(0, 1), labels = c("User Initiated", "AI Initiated"))
+  )
+
+# Plot stacked bars by Combined
+p <- ggplot(plot_data, aes(x = AI_Initiates_Label, y = Count, fill = Combined)) +
+  geom_bar(stat = "identity", position = "stack") +
+  facet_wrap(~Outcome) +
+  scale_fill_manual(values = c(
+    "Success (No Help)" = "steelblue",
+    "Success (Asked Help)" = '#A3717C',
+    "Failure (No Help)" = "tomato",
+    "Failure (Asked Help)" = "gold"  # Add if exists
+  )) +
+  labs(
+    title = "Success/Failure by Initiator and Help Request (Colored by Help + Outcome)",
+    x = "Who Initiated",
+    y = "Participants",
+    fill = "Outcome + Help"
+  ) +
+  scale_y_continuous(breaks = seq(0, max(plot_data$Count), by = 5)) +
+  theme_minimal()
+
+ggsave("plots/SuccessFailure_Stacked_by_Help_and_Outcome_Labelled.png", plot = p, width = 8, height = 4, dpi = 300, bg = "white")
+
+p
+```
+
+### Statistical analysis
+
+Understanding whether the condition changed user behavior is done by finding the ratio of success to failure in both conditions as well as their dispersion.
+
+``` {r}
+analyze <- function(successes, failures) {
+  n <- successes + failures
+  p <- successes / n
+  sd <- sqrt(p * (1 - p) / n)
+  ci_low <- p - 1.96 * sd
+  ci_high <- p + 1.96 * sd
+  return(list(
+    success_rate = p,
+    sd = sd,
+    ci_95 = c(ci_low, ci_high)
+  ))
+}
+
+# Summarize data into success and failures
+successes <- c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE]), 
+  sum(all_data$Success[all_data$AI_Initiates == FALSE])
+  )
+
+failures <- c(
+  sum(all_data$Failure[all_data$AI_Initiates == TRUE]), 
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE])
+  )
+
+ai_result <- analyze(successes[1], failures[1])
+user_result <- analyze(successes[2], failures[2])
+
+# Create a data frame for the results
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated"),
+  Successes = successes,
+  Failures = failures,
+  Success_Rate = c(ai_result$success_rate, user_result$success_rate),
+  SD = c(ai_result$sd, user_result$sd),
+  CI_Low = c(ai_result$ci_95[1], user_result$ci_95[1]),
+  CI_High = c(ai_result$ci_95[2], user_result$ci_95[2])
+)
+# Print the results
+print(results_df)
+
+# Fishers test
+# Filter only the two groups
+contingency_data <- results_df %>%
+  filter(Group %in% c("AI Initiated", "User Initiated")) %>%
+  select(Group, Successes, Failures)
+
+# Create matrix for Fisher's test
+contingency_table <- matrix(
+  c(
+    contingency_data$Successes[contingency_data$Group == "AI Initiated"],
+    contingency_data$Failures[contingency_data$Group == "AI Initiated"],
+    contingency_data$Successes[contingency_data$Group == "User Initiated"],
+    contingency_data$Failures[contingency_data$Group == "User Initiated"]
+  ),
+  nrow = 2,
+  byrow = TRUE
+)
+
+rownames(contingency_table) <- c("Successes", "Failures")
+colnames(contingency_table) <- c("AI Initiated", "User Initiated")
+
+print(contingency_table)
+
+# Perform Fisher's exact test
+fisher_test_result <- fisher.test(contingency_table, alternative = "two.sided")
+print(fisher_test_result)
+
+
+
+
+# plot the results with confidence interval
+p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
+  scale_y_continuous(limits = c(-0.5, 1)) +
+  labs(
+    subtitle = paste0("Fisher's Exact Test (AI vs AI no ask) p = ", signif(fisher_test_result$p.value, 3)),
+    title = "Success Rate by AI Initiation",
+    x = "Condition",
+    y = "Success Rate"
+  ) +
+  theme_minimal()
+p
+ggsave("plots/Success_Rate_by_AI_Initiation.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+```
+
+
+``` {r}
+analyze <- function(successes, failures) {
+  n <- successes + failures
+  p <- successes / n
+  sd <- sqrt(p * (1 - p) / n)
+  ci_low <- p - 1.96 * sd
+  ci_high <- p + 1.96 * sd
+  return(list(
+    success_rate = p,
+    sd = sd,
+    ci_95 = c(ci_low, ci_high)
+  ))
+}
+
+# Summarize data into success and failures
+successes <- c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE]), 
+  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE]))
+
+failures <- c(
+  sum(all_data$Failure[all_data$AI_Initiates == TRUE]), 
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE &all_data$Asks_for_Help == FALSE]))
+
+ai_result <- analyze(successes[1], failures[1])
+noASK <- analyze(successes[2], failures[2])
+
+# Create a data frame for the results
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated without asking for help"),
+  Successes = successes,
+  Failures = failures,
+  Success_Rate = c(ai_result$success_rate,  noASK$success_rate),
+  SD = c(ai_result$sd,  noASK$sd),
+  CI_Low = c(ai_result$ci_95[1],  noASK$ci_95[1]),
+  CI_High = c(ai_result$ci_95[2],  noASK$ci_95[2])
+)
+# Print the results
+print(results_df)
+
+# Fishers test
+# Filter only the two groups
+contingency_data <- results_df %>%
+  filter(Group %in% c("AI Initiated", "User Initiated without asking for help")) %>%
+  select(Group, Successes, Failures)
+
+# Create matrix for Fisher's test
+contingency_table <- matrix(
+  c(
+    contingency_data$Successes[contingency_data$Group == "AI Initiated"],
+    contingency_data$Failures[contingency_data$Group == "AI Initiated"],
+    contingency_data$Successes[contingency_data$Group == "User Initiated without asking for help"],
+    contingency_data$Failures[contingency_data$Group == "User Initiated without asking for help"]
+  ),
+  nrow = 2,
+  byrow = TRUE
+)
+
+rownames(contingency_table) <- c("Successes", "Failures")
+colnames(contingency_table) <- c("AI Initiated", "User Initiated w/o Help")
+
+print(contingency_table)
+
+# Perform Fisher's exact test
+fisher_test_result <- fisher.test(contingency_table, alternative = "two.sided")
+print(fisher_test_result)
+
+
+
+
+# plot the results with confidence interval
+p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
+  scale_y_continuous(limits = c(-0.5, 1)) +
+  labs(
+    subtitle = paste0("Fisher's Exact Test (AI vs User no ask) p = ", signif(fisher_test_result$p.value, 3)),
+    title = "Success Rate by AI Initiation -w/o asking facilitators",
+    x = "Condition",
+    y = "Success Rate"
+  ) +
+  theme_minimal()
+p
+ggsave("plots/Success_Rate_by_AI_Initiation_-_no_asked.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+```
+### Grasping at straws
+
+What if we assume that all the people that asked would have given up on Rosie and walked away defeated.
+```{r}
+# Summarize data into success and failures
+successes <- c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE])
+)
+
+failures <- c(
+  sum(all_data$Failure[all_data$AI_Initiates == TRUE]),
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE]),
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE])
+)
+
+# Assume everyone who asked for help would have failed
+failures[3] <- failures[3] + sum(all_data$Success[all_data$Asks_for_Help == 1])
+successes[3] <- successes[3]  # Stays the same (no successes from those asking for help)
+
+# Create analyzed results
+ai_result <- analyze(successes[1], failures[1])
+noASK_result <- analyze(successes[3], failures[3])
+
+# Now adjust data to have just AI Initiated vs User Initiated (without help)
+# Overwrite the general user-initiated group (2nd position) with the no-help group (3rd position)
+successes[2] <- successes[3]
+failures[2] <- failures[3]
+
+# Remove AI initiated (first entry) to leave comparison between AI and User (no help)
+successes <- successes[-2]
+failures <- failures[-2]
+
+# Check the revised numbers
+print(successes)
+print(failures)
+
+# Create a data frame for the results
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated without asked for help"),
+  Successes = successes,
+  Failures = failures,
+  Success_Rate = c(ai_result$success_rate,  noASK$success_rate),
+  SD = c(ai_result$sd, noASK$sd),
+  CI_Low  =  c(ai_result$ci_95[1], noASK$ci_95[1]),
+  CI_High =  c(ai_result$ci_95[2], noASK$ci_95[2])
+)
+results_df
+
+# Filter only the two groups
+contingency_data <- results_df %>%
+  filter(Group %in% c("AI Initiated", "User Initiated without asked for help")) %>%
+  select(Group, Successes, Failures)
+
+# Create matrix for Fisher's test
+contingency_table <- matrix(
+  c(
+    contingency_data$Successes[contingency_data$Group == "AI Initiated"],
+    contingency_data$Failures[contingency_data$Group == "AI Initiated"],
+    contingency_data$Successes[contingency_data$Group == "User Initiated without asked for help"],
+    contingency_data$Failures[contingency_data$Group == "User Initiated without asked for help"]
+  ),
+  nrow = 2,
+  byrow = TRUE
+)
+
+rownames(contingency_table) <- c("Successes", "Failures")
+colnames(contingency_table) <- c("AI Initiated", "User Initiated w/o Help")
+
+print(contingency_table)
+
+# Perform Fisher's exact test
+fisher_test_result <- fisher.test(contingency_table, alternative = "two.sided")
+print(fisher_test_result)
+print(fisher_test_result$p.value)
+
+
+# Print the results
+print(results_df)
+
+# plot the results with confidence interval
+p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
+  scale_y_continuous(limits = c(-0.5, 1)) +
+  labs(
+    subtitle = paste0("Fisher's Exact Test AI vs user no ask where asking is failure p = ", signif(fisher_test_result$p.value, 3)),
+    title = "Success Rate by AI Initiation where asking is failing",
+    x = "Condition",
+    y = "Success Rate"
+  ) +
+  theme_minimal()
+p
+ggsave("plots/Success_Rate_by_AI_Initiation_-_asking_is_failing.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+
+
+
+```
+## Higher likelyhood of asking if user initiated?
+
+```{r}
+# Summarize data into success and failures  
+Asked <- c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE & all_data$Asks_for_Help == TRUE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == TRUE])
+)
+DidNotAsk <- c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE & all_data$Asks_for_Help == FALSE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE])
+)
+
+# Create analyzed results
+ai_result <- analyze(Asked[1], DidNotAsk[1])
+user_result <- analyze(Asked[2], DidNotAsk[2])
+
+
+# Create a data frame for the results
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated"),
+  Asked = Asked,
+  DidNotAsk = DidNotAsk,
+  Success_Rate = c(ai_result$success_rate, user_result$success_rate),
+  SD = c(ai_result$sd, user_result$sd),
+  CI_Low = c(ai_result$ci_95[1], user_result$ci_95[1]),
+  CI_High = c(ai_result$ci_95[2], user_result$ci_95[2])
+)
+# Print the results
+print(results_df)
+
+```
+
+```{r}
+# Filter only the two groups
+contingency_data <- results_df %>%
+  filter(Group %in% c("AI Initiated", "User Initiated")) %>%
+  select(Group, Asked, DidNotAsk)
+contingency_data
+
+# Remove the firs column from contingency data
+contingency_data <- contingency_data[, -1]
+
+rownames(contingency_data) <- c("AI Initiated", "User Initiated")
+colnames(contingency_data) <- c("Asked", "DidNotAsk")
+
+
+contingency_data
+
+# Perform Fisher's exact test
+fisher_test_result <- fisher.test(contingency_data, alternative = "two.sided")
+print(fisher_test_result)
+print(fisher_test_result$p.value)
+
+# plot the results with confidence interval
+p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
+  scale_y_continuous(limits = c(-0.5, 1)) +
+  labs(
+    subtitle = paste0("Fisher's Exact Test Asking vs not asking vs AI vs user p = ", signif(fisher_test_result$p.value, 3)),
+    title = "Askin Rate by AI Initiation",
+    x = "Condition",
+    y = "Asked Rate"
+  ) +
+  theme_minimal()
+p
+ggsave("plots/Askin_Rate_by_AI_Initiation.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+
+
+```

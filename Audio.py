@@ -80,9 +80,16 @@ def play_audio(audio_data, samplerate=24000, channels=1):
     player.write(audio_data)
 
 
-def record_audio_while_pressed(
-    InitiateConversation=False, samplerate=24000, channels=1
-):
+def read_variable(path):
+    # Read the current value from the file
+    with open(path, "r") as file:
+        try:
+            return int(file.read().strip())
+        except ValueError:
+            return 1
+
+
+def record_audio_while_pressed(samplerate=24000, channels=1):
     """
     Records an audio clip as long as a button is pressed and returns it as a NumPy array.
 
@@ -93,6 +100,8 @@ def record_audio_while_pressed(
     Returns:
         np.ndarray: The recorded audio as a NumPy array.
     """
+    with open("recording_audio", "w") as file:
+        file.write(str(1))
 
     # Create a buffer to store the recorded audio
     recorded_audio = []
@@ -100,19 +109,57 @@ def record_audio_while_pressed(
     with sd.InputStream(
         samplerate=samplerate, channels=channels, dtype=np.float32
     ) as stream:
+        record = read_variable("recording_audio")
+        while record == 1:
+            Initiate = read_variable("initiate_conversation")
+            record = read_variable("recording_audio")
 
-        while not (keyboard.is_pressed("space")):
-            # Read audio data from the stream
-            audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
-            recorded_audio.append(audio_chunk)
+            if Initiate == 1:
+                recorded_audio = load_audio_file("saved_audio/User/Initiering.wav")
+                return recorded_audio
+            else:
+                # Read audio data from the stream
+                audio_chunk, _ = stream.read(1024)  # Read in chunks of 1024 frames
+                recorded_audio.append(audio_chunk)
 
+            # If the current condition is Initiate the recorded audio is overwritten
             if keyboard.is_pressed("escape"):
                 # print("Program stopped by user.")
                 sys.exit()  # Terminates the entire program
 
-    # print("Recording complete.")
-    # Combine all chunks into a single NumPy array
-    return np.concatenate(recorded_audio).flatten()
+    return trim_audio(np.concatenate(recorded_audio).flatten())
+
+
+first_time = True  # Used to trim the audio only the first time the user initiates the conversation
+
+
+def trim_audio(audio_data, sample_rate=24000, max_length_sec=30):
+    """
+    Trims the audio data to a maximum length.
+
+    Parameters:
+        audio_data (np.ndarray): The audio data to trim.
+        max_length (int): The maximum length of the audio data.
+
+    Returns:
+        np.ndarray: The trimmed audio data.
+    """
+    global first_time
+    if first_time:
+        first_time = False
+        max_length_sec = 2
+
+    print(
+        "Trimming audio to max length of ",
+        max_length_sec,
+        " seconds, was previously",
+        len(audio_data) / sample_rate,
+        "seconds long",
+    )
+    length = int(max_length_sec * sample_rate)  # Convert seconds to samples
+    if len(audio_data) > length:
+        audio_data = audio_data[-length:]  # Take the last `length` samples
+    return audio_data
 
 
 def format_audio_data(audio_data, samplerate=24000):
@@ -143,12 +190,9 @@ def send_audio_to_audio2face_server(
     Sends audio data to the Audio2Face Streaming Audio Player via gRPC requests.
     """
     # Format the audio data
-    audio_data = format_audio_data(audio_data, samplerate)
+    if len(audio_data.shape) > 1:
+        audio_data = np.average(audio_data, axis=1)
 
-    # sd.play(audio_data, samplerate)    #for debugging
-    # sd.wait()                          #for debugging
-
-    # print("Sending Audio")
     push_audio_track_stream(url, audio_data, samplerate, instance_name)
 
 
@@ -159,8 +203,6 @@ def int16_to_float32(audio: npt.NDArray[np.int16]) -> npt.NDArray[np.float32]:
 async def handle_audio_stream(
     result,
     InitiateConversation=False,
-    instance_name="/World/audio2face/PlayerStreaming",
-    url="localhost:50051",
 ):
     """
     Handles streaming audio events, processes the audio, and optionally sends it to the Audio2Face server.
@@ -194,12 +236,11 @@ async def handle_audio_stream(
 
     audio = np.concatenate(incoming_response).flatten()
 
-    if InitiateConversation:
-        # print("Ready to Initiate Conversation - Press space to start")
-        printLytter()
-        while not (keyboard.is_pressed("space")):
-            if keyboard.is_pressed("space"):
-                # print("Initiating conversation...")
-                break
-
+    waiting = read_variable("recording_audio")
+    # print("Ready to Initiate Conversation - Press space to start")
+    printLytter()
+    while waiting == 1:
+        waiting = read_variable("recording_audio")
+    with open("initiate_conversation", "w") as file:
+        file.write(str(0))
     return audio, continue_conversation

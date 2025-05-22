@@ -26,7 +26,7 @@ def create_pipeline(agent: Agent):
         workflow=SingleAgentVoiceWorkflow(agent),
         config=VoicePipelineConfig(
             stt_settings=STTModelSettings(language="da"),
-            tts_settings=TTSModelSettings(voice="sage"),
+            tts_settings=TTSModelSettings(voice="sage", speed=1.0),
         ),
     )
 
@@ -49,6 +49,7 @@ async def run_pipeline(
         ai_audio = None
 
         printLytter()
+
         if InitiateConversation:
             # print("Loading pre-recorded audio...")
             user_audio = load_audio_file("saved_audio/User/Initiering.wav")
@@ -71,8 +72,6 @@ async def run_pipeline(
             ai_audio, continue_conversation = await handle_audio_stream(
                 result=result,
                 InitiateConversation=InitiateConversation,
-                instance_name="/World/audio2face/PlayerStreaming",
-                url="localhost:50051",
             )
             InitiateConversation = False
             # print("Response finished...", " Continue = ", continue_conversation)
@@ -93,6 +92,13 @@ async def run_pipeline(
                 instance_name="/World/audio2face/PlayerStreaming",
                 url="localhost:50051",
             )
+            reset_audio = load_audio_file("saved_audio/User/reset_face.wav")
+            send_audio_to_audio2face_server(
+                audio_data=reset_audio,
+                samplerate=24000,
+                instance_name="/World/audio2face/PlayerStreaming",
+                url="localhost:50051",
+            )
         else:
             # print("Playing audio locally...")
             play_audio(ai_audio)
@@ -105,15 +111,15 @@ def makeSessionFolder():
     Returns:
         int: The new session number.
     """
-    folder_name_path = "saved_audio/FolderName"
+    current_session_path = "Current_Session"
     sessions_folder = "saved_audio/Sessions"
 
     # Ensure the Sessions folder exists
     os.makedirs(sessions_folder, exist_ok=True)
 
     # Read the current number from FolderName
-    if os.path.exists(folder_name_path):
-        with open(folder_name_path, "r") as file:
+    if os.path.exists(current_session_path):
+        with open(current_session_path, "r") as file:
             try:
                 current_number = int(file.read().strip())
             except ValueError:
@@ -121,15 +127,15 @@ def makeSessionFolder():
     else:
         current_number = 0
 
-    # Increment the number
+    """     # Increment the number
     new_number = current_number + 1
 
     # Save the updated number back to FolderName
-    with open(folder_name_path, "w") as file:
-        file.write(str(new_number))
+    with open(current_session_path, "w") as file:
+        file.write(str(new_number)) """
 
     # Create a new folder for the session
-    session_folder_path = os.path.join(sessions_folder, str(new_number))
+    session_folder_path = os.path.join(sessions_folder, str(current_number))
     os.makedirs(session_folder_path, exist_ok=True)
 
-    return new_number
+    return current_number
