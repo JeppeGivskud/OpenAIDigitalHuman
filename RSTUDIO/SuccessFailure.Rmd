@@ -83,6 +83,90 @@ session_data <- data.frame(
 
 session_data
 
+```
+
+## How many people pr hour?
+```{r}
+dateovertime <- function(hours,participants) {
+ return(
+   participants/hours
+ )
+  
+}
+
+#Make a new dataframe that combines session 1 and 2. Then it combines session 4 and 5. Then it also combines session size and session hours
+session_data_combined <- data.frame(
+  Setup = c(1, 2, 3, 4),
+  size = c(
+    sum(session_sizes[1:2]), sum(session_sizes[3]), 
+    sum(session_sizes[4:5]), sum(session_sizes[6])
+    ),
+  hours = c(
+    sum(session_hours[1:2]),sum(session_hours[3]), 
+    sum(session_hours[4:5]),sum(session_hours[6])
+    ),
+  people_pr_hour =c(
+    sum(session_sizes[1:2])/sum(session_hours[1:2]), 
+    sum(session_sizes[3])/sum(session_hours[3]), 
+    sum(session_sizes[4:5])/sum(session_hours[4:5]), 
+    sum(session_sizes[6])/sum(session_hours[6])
+    )
+)
+session_data_combined
+
+
+# Create a setup assignment for each row in all_data
+setup_ids <- rep(session_data_combined$Setup, session_data_combined$size)
+
+# Add setup ID to all_data
+all_data$Setup <- setup_ids
+
+all_data
+
+library(dplyr)
+
+outcome_summary <- all_data %>%
+  group_by(Setup) %>%
+  summarise(
+    Successes = sum(Success, na.rm = TRUE),
+    Failures = sum(Failure, na.rm = TRUE)
+  )
+outcome_summary
+
+final_data <- session_data_combined %>%
+  left_join(outcome_summary, by = "Setup") %>%
+  replace_na(list(Successes = 0, Failures = 0))
+final_data
+
+final_data <- final_data %>%
+  mutate(
+    successes_per_hour = Successes / hours,
+    failures_per_hour = Failures / hours
+  )
+final_data
+
+library(ggplot2)
+library(tidyr)
+
+# Pivot longer to plot both success and failure in one go
+plot_data <- final_data %>%
+  select(Setup, successes_per_hour, failures_per_hour) %>%
+  pivot_longer(
+    cols = c(successes_per_hour, failures_per_hour),
+    names_to = "Outcome",
+    values_to = "Per_Hour"
+  )
+
+ggplot(plot_data, aes(x = factor(Setup), y = Per_Hour, fill = Outcome)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    x = "Setup",
+    y = "Per Hour",
+    title = "Successes and Failures per Hour by Setup"
+  ) +
+  scale_fill_manual(values = c("successes_per_hour" = "steelblue", "failures_per_hour" = "tomato")) +
+  theme_minimal()
+
 ``` 
 
 ## Plots
@@ -112,7 +196,7 @@ plot_data <- all_data %>%
       TRUE ~ "Unknown"
     )
   )
-
+plot_data
 p <- ggplot(plot_data, aes(x = EventIndex, y = 1, color = Outcome)) +
   geom_point(size = 3) +
   geom_vline(xintercept = session_starts, linetype = "dashed", color = "black", alpha = 0.5) +
