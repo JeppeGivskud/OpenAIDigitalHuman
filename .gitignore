@@ -13,7 +13,7 @@ initiate_conversation
 recording_audio
 Current_Session
 *.png
-.RData
-.Rhistory
+*.RData
+*.Rhistory
 *.Rproj
 ./rsconnect
