@@ -139,22 +139,33 @@ Questionnaire_plot <- function(data, questions, columns, title, title_offset) {
                  values_to = "Score") %>%
     mutate(Question = factor(Question, levels = unique(Question)))
   
-  # Plot
   p <- ggplot(Engagement_long, aes(x = Question, y = Score, fill = Condition)) +
-    stat_summary(fun = mean, geom = "bar", position = position_dodge()) +
+    stat_summary(
+      fun = mean,
+      geom = "bar",
+      position = position_dodge(),
+      color = "black",    # Add stroke color here
+      size = 0.4          # Stroke width (adjust as needed)
+    ) +
     labs(title = title, 
          x = "", y = "Average Score") +
-    stat_summary(fun = mean, 
-                 geom = "text", 
-                 aes(label = round(..y.., 2)),  
-                 position = position_dodge(width = 0.9), 
-                 vjust = 0.4, hjust = 1.2, size = 3.5) +
+    stat_summary(
+      fun = mean, 
+      geom = "text", 
+      aes(label = round(..y.., 2)),  
+      position = position_dodge(width = 0.9), 
+      vjust = 0.4, hjust = 1.2, size = 3.5
+    ) +
     scale_x_discrete(labels = questions) +
     scale_fill_manual(values = c(
-                  "AI" = "steelblue",
-                  "User" = "tomato")) +
+      "AI" = "steelblue",
+      "User" = "tomato"
+    )) +
     theme_minimal() +
-    theme(legend.position = "top",panel.grid.minor = element_line(color = "grey78")) + 
+    theme(
+      legend.position = "top",
+      panel.grid.minor = element_line(color = "grey78")
+    ) + 
     coord_flip()
   
   # Save plot
@@ -280,6 +291,90 @@ my.labels <- c(
 # Call the function
 Questionnaire_plot(data, questions = my.labels, columns = c(12,19,26,27), title = "Scores for each construct",title_offset = 0.4)
 ```
+```{r}
+plot_multiple_variables_boxplot <- function(data, columns, labels, title = "Boxplots for Constructs") {
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+
+  # Prepare data
+  long_data <- data %>%
+    select(Condition, all_of(columns)) %>%
+    mutate(Condition = factor(Condition, levels = c("AI", "User"))) %>%
+    pivot_longer(-Condition, names_to = "Variable", values_to = "Score") %>%
+    mutate(Score = as.numeric(Score)) %>%
+    mutate(Variable = factor(Variable, levels = unique(Variable)))
+
+  # Compute stats per variable
+  stats_df <- long_data %>%
+    group_by(Variable, Condition) %>%
+    summarise(
+      mean = mean(Score, na.rm = TRUE),
+      sd = sd(Score, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  # T-tests per variable
+  t_test_results <- long_data %>%
+    group_by(Variable) %>%
+    summarise(
+      p_value = t.test(Score ~ Condition)$p.value,
+      .groups = "drop"
+    )
+
+  # Label mapping
+  label_df <- data.frame(Variable = levels(long_data$Variable), Label = labels)
+
+  # Merge mean & SD (averaged across conditions) and other info
+  avg_sd_df <- stats_df %>%
+    group_by(Variable) %>%
+    summarise(sd = mean(sd, na.rm = TRUE), .groups = "drop")
+
+  long_data <- long_data %>%
+    left_join(t_test_results, by = "Variable") %>%
+    left_join(avg_sd_df, by = "Variable") %>%
+    left_join(label_df, by = "Variable") %>%
+    mutate(facet_label = paste0(Label, "\n(p = ", signif(p_value, 3), ")", "\n(sd = ", signif(sd, 3), ")"))
+
+  # Plot
+  p <- ggplot(long_data, aes(x = Condition, y = Score, fill = Condition)) +
+    geom_boxplot() +
+    geom_jitter(width = 0.15, alpha = 0.4) +
+    facet_wrap(~ facet_label, scales = "free_y") +
+    scale_fill_manual(values = c("AI" = "steelblue", "User" = "tomato")) +
+    labs(
+      title = title,
+      x = NULL,
+      y = "Score"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none", strip.text = element_text(size = 12))
+
+  # Save the plot
+  ggsave(filename = paste0("plots/", "Questionnaire_", gsub(" ", "_", title), ".png"), plot = p, width = 8, height = 8, dpi = 300, bg = "white")
+  
+  return(p)
+}
+
+```
+
+```{r}
+plot_multiple_variables_boxplot(
+  data = data,
+  columns = c(12, 19, 26, 27),
+  labels = c(
+    "Engagement",  
+    "Perceived Usefulness",  
+    "Perceived Ease of Use (PEU)",
+    "Intention to Use"
+  ),
+  title = "Scores for each construct boxplot"
+)
+
+
+```
+
+
 
 
 

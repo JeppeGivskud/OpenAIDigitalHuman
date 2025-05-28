@@ -3,6 +3,9 @@ title: "SuccessFailure"
 author: "Jgivsk, Skth, Rdha"
 date: "`r Sys.Date()`"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
@@ -12,18 +15,17 @@ knitr::opts_chunk$set(echo = TRUE)
 # Success failure experiment
 
 ## Data loading
+
 We load the data files from the participants actions folder.
 
-The data is in the format of a csv file with the following columns:
-- `Timestamp`: The time the action was taken
-- `Session`: The session (participant number)
-- `AI Initiates`: Whether the AI initiated the action
-- `User Initiates`: Whether the user initiated the action
-- `Success`: Whether the interaction was successful
-- `Failure`: Whether the interaction failed
-- `Leaves`: Whether the user left the session before satisfactory interaction
-- `Asks for Help`: Whether the user asked facilitators for help
-
+The data is in the format of a csv file with the following columns: -
+`Timestamp`: The time the action was taken - `Session`: The session
+(participant number) - `AI Initiates`: Whether the AI initiated the
+action - `User Initiates`: Whether the user initiated the action -
+`Success`: Whether the interaction was successful - `Failure`: Whether
+the interaction failed - `Leaves`: Whether the user left the session
+before satisfactory interaction - `Asks for Help`: Whether the user
+asked facilitators for help
 
 ```{r}
 library(ggplot2)
@@ -58,12 +60,13 @@ str(all_data)
 colnames(all_data)
 ```
 
-
-
 ## Plan
 
-The experiment was conducted over multiple sessions with slight changes in experimental setup and criteria for participation in the experiment as this was refined over time as can be read in the report.
-```{r} 
+The experiment was conducted over multiple sessions with slight changes
+in experimental setup and criteria for participation in the experiment
+as this was refined over time as can be read in the report.
+
+```{r}
 sessions <- length(data_list)
 
 session_sizes <- sapply(data_list, nrow)
@@ -85,7 +88,10 @@ session_data
 
 ```
 
-## How many people pr hour?
+## Plots
+
+### How many people pr hour?
+
 ```{r}
 dateovertime <- function(hours,participants) {
  return(
@@ -199,19 +205,33 @@ plot_data <- final_data %>%
     )
   )
 
+# Convert to character and factor with manual order
+plot_data$Group <- as.character(interaction(plot_data$Setup, plot_data$BarGroup, drop = TRUE))
+plot_data$Group <- factor(plot_data$Group, levels = c(
+  "1.Success AI",
+  "2.Success AI",
+  "3.Success AI",
+  "4.Success AI",
+  "1.Success User",
+  "2.Success User",
+  "3.Success User",
+  "4.Success User",
+  "1.Failure (AI)",
+  "2.Failure (AI)",
+  "3.Failure (AI)",
+  "4.Failure (AI)",
+  "1.Failure (User)",
+  "2.Failure (User)",
+  "3.Failure (User)",
+  "4.Failure (User)"
+))
 
-ggplot(plot_data, aes(x = factor(Setup), y = Per_Hour, fill = Outcome)) +
-  geom_bar(
-    stat = "identity",
-    position = position_dodge(width = 0.7),
-    aes(group = BarGroup),
-    width = 0.7
-  ) +
-  labs(
-    x = "Setup",
-    y = "Participants Per Hour",
-    title = "Successes (Asked/Not Asked) and Failures per Hour by Setup"
-  ) +
+# Extract just the setup number for display
+label_map <- setNames(as.character(plot_data$Setup), plot_data$Group)
+
+ggplot(plot_data, aes(x = Group, y = Per_Hour, fill = Outcome)) +
+  geom_bar(stat = "identity", position = "stack",width = 0.7) +
+  labs(x = "Setup", y = "Per Hour", title = "AI/User Initiated Successes and Failures per Hour by Setup with asking/no asking") +
   scale_fill_manual(values = c(
     "Success (AI, Asked)" = "purple",
     "Success (AI, Not Asked)" = "cyan",
@@ -220,17 +240,91 @@ ggplot(plot_data, aes(x = factor(Setup), y = Per_Hour, fill = Outcome)) +
     "Failure (AI)" = "brown",
     "Failure (User)" = "tomato"
   )) +
-  theme_minimal()
+  scale_x_discrete(labels = label_map) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
 
+
+# Step 1: Original data
+plot_data$Group <- as.character(interaction(plot_data$Setup, plot_data$BarGroup, drop = TRUE))
+
+# Step 2: Add spacer rows
+spacers <- data.frame(
+  Setup = NA,
+  RawOutcome = NA,
+  Per_Hour = 0,
+  Outcome = "Spacer",
+  BarGroup = NA,
+  Group = c("spacer_1_2", "spacer_2_3", "spacer_3_4")
+)
+
+# Step 3: Bind spacer rows into the original data
+plot_data_full <- rbind(plot_data, spacers)
+
+# Step 4: Define the plotting order manually
+plot_data_full$Group <- factor(plot_data_full$Group, levels = c(
+  "1.Success AI",
+  "1.Success User",
+  "1.Failure (AI)",
+  "1.Failure (User)",
+  "spacer_1_2",
+  "2.Success AI",
+  "2.Success User",
+  "2.Failure (AI)",
+  "2.Failure (User)",
+  "spacer_2_3",
+  "3.Success AI",
+  "3.Success User",
+  "3.Failure (AI)",
+  "3.Failure (User)",
+  "spacer_3_4",
+  "4.Success AI",
+  "4.Success User",
+  "4.Failure (AI)",
+  "4.Failure (User)"
+))
+# Extract just the setup number for display
+label_map <- setNames(as.character(plot_data$Setup), plot_data$Group)
+
+ggplot(plot_data_full, aes(x = Group, y = Per_Hour, fill = Outcome)) +
+  geom_bar(stat = "identity", position = "stack", width = 0.9) +
+  labs(x = "Setup", y = "Per Hour", title = "AI/User Initiated Successes and Failures per Hour by Setup with asking/no asking") +
+  scale_fill_manual(
+    values = c(
+      "Success (AI, Asked)" = "purple",
+      "Success (AI, Not Asked)" = "cyan",
+      "Success (User, Asked)" = "darkorchid",
+      "Success (User, Not Asked)" = "steelblue",
+      "Failure (AI)" = "brown",
+      "Failure (User)" = "tomato",
+      "Spacer" = NA  # transparent
+    ),
+    na.value = NA,
+    breaks = c(
+      "Success (AI, Asked)",
+      "Success (AI, Not Asked)",
+      "Success (User, Asked)",
+      "Success (User, Not Asked)",
+      "Failure (AI)",
+      "Failure (User)"
+    )
+  ) +
+  scale_x_discrete(labels = function(x) {
+    ifelse(grepl("^spacer", x), "", gsub("\\..*", "", x))
+  }) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+
+# Save the plot
 ggsave("plots/Successes_and_Failures_per_Hour_by_Setup.png", width = 8, height = 4, dpi = 300, bg = "white")
 
-``` 
 
-## Plots
+```
 
 The raw data for each session can be seen below
 
 #### Session success over time
+
 ```{r plot_by_index, fig.height=3, fig.width=10}
 
 # Calculate the start index of each session
@@ -281,9 +375,18 @@ ggsave("plots/Session_Outcomes_with_Session_Markers.png", plot = p, width = 8, h
 p
 
 ```
+
 #### Bar graph
 
-The data is a litle misleading as the facilitaros have introduced an error into the data. Whenever users was presented the "User initiated" condition they were often not sure on how to interact with the agent. Therefore they came to the facilitators and the facilitators said "Just say hi". This was not ideal but was done to gain more qualitative data into the experience of initiation or not initiating a conversation. However these people could have been either successes or failures and the exact outcome could no longer be recorded as now all the participants just became successes.
+The data is a litle misleading as the facilitaros have introduced an
+error into the data. Whenever users was presented the "User initiated"
+condition they were often not sure on how to interact with the agent.
+Therefore they came to the facilitators and the facilitators said "Just
+say hi". This was not ideal but was done to gain more qualitative data
+into the experience of initiation or not initiating a conversation.
+However these people could have been either successes or failures and
+the exact outcome could no longer be recorded as now all the
+participants just became successes.
 
 ```{r}
 # Create combined outcome and label AI Initiates as descriptive factor
@@ -325,11 +428,14 @@ ggsave("plots/SuccessFailure_Stacked_by_Help_and_Outcome_Labelled.png", plot = p
 p
 ```
 
-### Statistical analysis
+## Statistical analysis
 
-Understanding whether the condition changed user behavior is done by finding the ratio of success to failure in both conditions as well as their dispersion.
+Understanding whether the condition changed user behavior is done by
+finding the ratio of success to failure in both conditions as well as
+their dispersion.
 
-``` {r}
+### Simple analysis
+```{r}
 analyze <- function(successes, failures) {
   n <- successes + failures
   p <- successes / n
@@ -340,6 +446,20 @@ analyze <- function(successes, failures) {
     success_rate = p,
     sd = sd,
     ci_95 = c(ci_low, ci_high)
+  ))
+}
+
+library(Hmisc)
+analyse_wilson_Confidence <- function(successes, failures) {
+  n <- successes + failures
+  p <- successes / n
+  sd <- sqrt(p * (1 - p) / n)
+  ci <- binconf(x = successes, n = successes+failures, method = "wilson")
+  return(list(
+    success_rate = p,
+    sd = sd,
+    ci_lower = ci[2],
+    ci_upper = ci[3]
   ))
 }
 
@@ -354,8 +474,8 @@ failures <- c(
   sum(all_data$Failure[all_data$AI_Initiates == FALSE])
   )
 
-ai_result <- analyze(successes[1], failures[1])
-user_result <- analyze(successes[2], failures[2])
+ai_result <- analyse_wilson_Confidence(successes[1], failures[1])
+user_result <- analyse_wilson_Confidence(successes[2], failures[2])
 
 # Create a data frame for the results
 results_df <- data.frame(
@@ -364,9 +484,11 @@ results_df <- data.frame(
   Failures = failures,
   Success_Rate = c(ai_result$success_rate, user_result$success_rate),
   SD = c(ai_result$sd, user_result$sd),
-  CI_Low = c(ai_result$ci_95[1], user_result$ci_95[1]),
-  CI_High = c(ai_result$ci_95[2], user_result$ci_95[2])
+  CI_Low = c(ai_result$ci_lower, user_result$ci_lower),
+  CI_High = c(ai_result$ci_upper, user_result$ci_upper)
 )
+
+
 # Print the results
 print(results_df)
 
@@ -397,6 +519,9 @@ print(contingency_table)
 fisher_test_result <- fisher.test(contingency_table, alternative = "two.sided")
 print(fisher_test_result)
 
+results_df <- results_df %>%
+  mutate(Group = paste0(Group, "\n (successes: ", successes, " / failures: ", failures, ")"))
+results_df$Group <- factor(results_df$Group, levels = results_df$Group)
 
 
 
@@ -404,20 +529,234 @@ print(fisher_test_result)
 p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
   geom_point(size = 3) +
   geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
-  scale_y_continuous(limits = c(-0.5, 1)) +
+  geom_hline(yintercept = 0.5, linetype = "solid", color = "red", size = 1.2) +
+  scale_y_continuous(limits = c(0, 1)) +
   labs(
-    subtitle = paste0("Fisher's Exact Test (AI vs AI no ask) p = ", signif(fisher_test_result$p.value, 3)),
+    subtitle = paste0("Fisher's Exact Test (AI vs User) p = ", signif(fisher_test_result$p.value, 3)),
     title = "Success Rate by AI Initiation",
     x = "Condition",
-    y = "Success Rate"
+    y = "Probability of success"
   ) +
   theme_minimal()
 p
-ggsave("plots/Success_Rate_by_AI_Initiation.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
+ggsave("plots/Success_Rate_by_AI_Initiation.png", plot = p, width = 8, height = 6, dpi = 300, bg = "white")
 ```
 
 
-``` {r}
+### Combined plots with 4 columns
+
+```{r}
+library(Hmisc)
+analyse_wilson_Confidence <- function(successes, failures) {
+  n <- successes + failures
+  p <- successes / n
+  sd <- sqrt(p * (1 - p) / n)
+  ci <- binconf(x = successes, n = successes+failures, method = "wilson")
+  return(list(
+    success_rate = p,
+    sd = sd,
+    ci_lower = ci[2],
+    ci_upper = ci[3]
+  ))
+}
+
+
+
+
+successes <- c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE]) - sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == TRUE])
+)
+
+failures <- c(
+  sum(all_data$Failure[all_data$AI_Initiates == TRUE]),
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE]),
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE]),
+  sum(all_data$Failure[all_data$AI_Initiates == FALSE]) + 
+  sum(all_data$Success[all_data$Asks_for_Help == 1])
+)
+
+# Create analyzed results
+ai_result <- analyse_wilson_Confidence(successes[1], failures[1])
+user_result <- analyse_wilson_Confidence(successes[2], failures[2])
+noASK_result <- analyse_wilson_Confidence(successes[3], failures[3])
+ask_failing_result <- analyse_wilson_Confidence(successes[4], failures[4])
+
+
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated", "User Initiated \nw/o Asked for Help", "User Initiated \nAsking is failing"),
+  Success_Rate = c(ai_result$success_rate, user_result$success_rate, 
+                   noASK_result$success_rate, ask_failing_result$success_rate),
+  CI_Low = c(ai_result$ci_lower, user_result$ci_lower, 
+             noASK_result$ci_lower, ask_failing_result$ci_lower),
+  CI_High = c(ai_result$ci_upper, user_result$ci_upper, 
+              noASK_result$ci_upper, ask_failing_result$ci_upper)
+)
+
+
+# Run Fisher's exact tests
+pvals <- c(
+  fisher.test(matrix(c(successes[1], failures[1], successes[1], failures[1]), nrow = 2))$p.value,
+  fisher.test(matrix(c(successes[1], failures[1], successes[2], failures[2]), nrow = 2))$p.value,
+  fisher.test(matrix(c(successes[1], failures[1], successes[3], failures[3]), nrow = 2))$p.value,
+  fisher.test(matrix(c(successes[1], failures[1], successes[4], failures[4]), nrow = 2))$p.value
+)
+fisher.test(matrix(c(successes[1], failures[1], successes[2], failures[2]), nrow = 2))
+# Format p-values for plotting
+p_labels <- c(paste0("p = ", signif(pvals[1], 3)),
+              paste0("p = ", signif(pvals[2], 3)),
+              paste0("p = ", signif(pvals[3], 3)),
+              paste0("p = ", signif(pvals[4], 3)))
+
+results_df$p_label <- p_labels
+
+
+# Reorder rows manually: 1, 2, 4, 3
+results_df <- results_df[c(1, 2, 3, 4), ]
+
+results_df <- results_df %>%
+  mutate(Group = paste0(Group, "\n (successes: ", successes, " / failures: ", failures, ")"))
+results_df$Group <- factor(results_df$Group, levels = results_df$Group)
+
+
+p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
+  geom_text(aes(label = p_label, y = Success_Rate + 0.05), size = 3, vjust = -4) +
+  geom_hline(yintercept = 0.5, linetype = "solid", color = "red", size = 1.2) +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(
+    title = "Success Rate by AI Initiation",
+    subtitle = "Fisher's Exact Test p-values using Wilson score interval",
+    x = "Condition",
+    y = "Probability of success"
+  ) +
+  theme_minimal()
+
+p
+ggsave("plots/Success_Rate_by_AI_Initiation_combined.png", plot = p, width = 8, height = 6, dpi = 300, bg = "white")
+
+
+# Change results_df to have condition, successes, failures, success rate, and p-value
+results_df <- data.frame(
+  Condition = c("AI Initiated", "User Initiated", "User Initiated \nw/o Asked for Help", "User Initiated \nAsking is failing"),
+  Successes = successes,
+  Failures = failures,
+  Success_Rate = c(ai_result$success_rate, user_result$success_rate, 
+                   noASK_result$success_rate, ask_failing_result$success_rate),
+  P_Value = c(pvals[1],pvals[2], pvals[3], pvals[4]) 
+)
+
+# Transpose results_df
+results_df <- t(results_df)
+
+# Make condition the column names
+colnames(results_df) <- results_df[1, ]
+
+results_df
+# Remove the first row (which is now redundant)
+#results_df <- results_df[-1, ]
+
+# Save to csv
+write.csv(results_df, "results/Success_Rate_by_AI_Initiation_combined.csv")
+```
+
+### Higher likelyhood of asking if user initiated?
+
+```{r}
+library(Hmisc)
+analyse_wilson_Confidence <- function(successes, failures) {
+  n <- successes + failures
+  p <- successes / n
+  sd <- sqrt(p * (1 - p) / n)
+  ci <- binconf(x = successes, n = successes+failures, method = "wilson")
+  return(list(
+    success_rate = p,
+    sd = sd,
+    ci_lower = ci[2],
+    ci_upper = ci[3]
+  ))
+}
+# Summarize data into success and failures  
+Asked <- c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE & all_data$Asks_for_Help == TRUE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == TRUE])
+)
+DidNotAsk <- c(
+  sum(all_data$Success[all_data$AI_Initiates == TRUE & all_data$Asks_for_Help == FALSE]),
+  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE])
+)
+
+# Create analyzed results
+ai_result <- analyse_wilson_Confidence(Asked[1], DidNotAsk[1])
+user_result <- analyse_wilson_Confidence(Asked[2], DidNotAsk[2])
+
+
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated"),
+  Asked = Asked,
+  DidNotAsk = DidNotAsk,
+  Success_Rate = c(ai_result$success_rate, user_result$success_rate),
+  CI_Low = c(ai_result$ci_lower, user_result$ci_lower),
+  CI_High = c(ai_result$ci_upper, user_result$ci_upper)
+)
+
+
+# Print the results
+print(results_df)
+
+# Filter only the two groups
+contingency_data <- results_df %>%
+  filter(Group %in% c("AI Initiated", "User Initiated")) %>%
+  select(Group, Asked, DidNotAsk)
+contingency_data
+
+# Remove the firs column from contingency data
+contingency_data <- contingency_data[, -1]
+
+rownames(contingency_data) <- c(paste0("AI Initiated",contingency_data$Asked[1]), "User Initiated")
+colnames(contingency_data) <- c("Asked", "DidNotAsk")
+
+
+
+results_df <- results_df %>%
+  mutate(Group = paste0(Group, "\n (Asked: ", Asked, " / Not Asked: ", DidNotAsk, ")"))
+results_df$Group <- factor(results_df$Group, levels = results_df$Group)
+
+
+contingency_data
+
+# Perform Fisher's exact test
+fisher_test_result <- fisher.test(contingency_data, alternative = "two.sided")
+print(fisher_test_result)
+print(fisher_test_result$p.value)
+
+#Format group names
+results_df$Group <- factor(results_df$Group, levels = results_df$Group)
+
+# plot the results with confidence interval
+p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
+  scale_y_continuous(limits = c(0, 1)) +
+  geom_hline(yintercept = 0.5, linetype = "solid", color = "red", size = 1.2)+
+  labs(
+    subtitle = paste0("Fisher's Exact Test - Asking vs not asking for AI vs user p = ", signif(fisher_test_result$p.value, 3)),
+    title = "Askin Rate by AI Initiation",
+    x = "Condition",
+    y = "Probability of asking"
+  ) +
+  theme_minimal()
+p
+ggsave("plots/Askin_Rate_by_AI_Initiation.png", plot = p, width = 8, height = 6, dpi = 300, bg = "white")
+```
+
+# Not used
+
+
+```{r}
 analyze <- function(successes, failures) {
   n <- successes + failures
   p <- successes / n
@@ -495,15 +834,18 @@ p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
     subtitle = paste0("Fisher's Exact Test (AI vs User no ask) p = ", signif(fisher_test_result$p.value, 3)),
     title = "Success Rate by AI Initiation -w/o asking facilitators",
     x = "Condition",
-    y = "Success Rate"
+    y = "Probability of success"
   ) +
   theme_minimal()
 p
 ggsave("plots/Success_Rate_by_AI_Initiation_-_no_asked.png", plot = p, width = 8, height = 3, dpi = 300, bg = "white")
 ```
+
 ### Grasping at straws
 
-What if we assume that all the people that asked would have given up on Rosie and walked away defeated.
+What if we assume that all the people that asked would have given up on
+Rosie and walked away defeated.
+
 ```{r}
 # Summarize data into success and failures
 successes <- c(
@@ -591,7 +933,7 @@ p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
     subtitle = paste0("Fisher's Exact Test AI vs user no ask where asking is failure p = ", signif(fisher_test_result$p.value, 3)),
     title = "Success Rate by AI Initiation where asking is failing",
     x = "Condition",
-    y = "Success Rate"
+    y = "Probability of success"
   ) +
   theme_minimal()
 p
@@ -600,269 +942,3 @@ ggsave("plots/Success_Rate_by_AI_Initiation_-_asking_is_failing.png", plot = p, 
 
 
 ```
-## Higher likelyhood of asking if user initiated?
-
-```{r}
-library(Hmisc)
-analyse_wilson_Confidence <- function(successes, failures) {
-  n <- successes + failures
-  p <- successes / n
-  sd <- sqrt(p * (1 - p) / n)
-  ci <- binconf(x = successes, n = successes+failures, method = "wilson")
-  return(list(
-    success_rate = p,
-    sd = sd,
-    ci_lower = ci[2],
-    ci_upper = ci[3]
-  ))
-}
-# Summarize data into success and failures  
-Asked <- c(
-  sum(all_data$Success[all_data$AI_Initiates == TRUE & all_data$Asks_for_Help == TRUE]),
-  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == TRUE])
-)
-DidNotAsk <- c(
-  sum(all_data$Success[all_data$AI_Initiates == TRUE & all_data$Asks_for_Help == FALSE]),
-  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE])
-)
-
-# Create analyzed results
-ai_result <- analyse_wilson_Confidence(Asked[1], DidNotAsk[1])
-user_result <- analyse_wilson_Confidence(Asked[2], DidNotAsk[2])
-
-
-results_df <- data.frame(
-  Group = c("AI Initiated", "User Initiated"),
-  Asked = Asked,
-  DidNotAsk = DidNotAsk,
-  Success_Rate = c(ai_result$success_rate, user_result$success_rate),
-  CI_Low = c(ai_result$ci_lower, user_result$ci_lower),
-  CI_High = c(ai_result$ci_upper, user_result$ci_upper)
-)
-
-
-# Print the results
-print(results_df)
-
-# Filter only the two groups
-contingency_data <- results_df %>%
-  filter(Group %in% c("AI Initiated", "User Initiated")) %>%
-  select(Group, Asked, DidNotAsk)
-contingency_data
-
-# Remove the firs column from contingency data
-contingency_data <- contingency_data[, -1]
-
-rownames(contingency_data) <- c(paste0("AI Initiated",contingency_data$Asked[1]), "User Initiated")
-colnames(contingency_data) <- c("Asked", "DidNotAsk")
-
-
-
-results_df <- results_df %>%
-  mutate(Group = paste0(Group, "\n (Asked: ", Asked, " / Not Asked: ", DidNotAsk, ")"))
-results_df$Group <- factor(results_df$Group, levels = results_df$Group)
-
-
-contingency_data
-
-# Perform Fisher's exact test
-fisher_test_result <- fisher.test(contingency_data, alternative = "two.sided")
-print(fisher_test_result)
-print(fisher_test_result$p.value)
-
-#Format group names
-results_df$Group <- factor(results_df$Group, levels = results_df$Group)
-
-# plot the results with confidence interval
-p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
-  geom_point(size = 3) +
-  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
-  scale_y_continuous(limits = c(0, 1)) +
-  geom_hline(yintercept = 0.5, linetype = "solid", color = "red", size = 1.2)+
-  labs(
-    subtitle = paste0("Fisher's Exact Test - Asking vs not asking for AI vs user p = ", signif(fisher_test_result$p.value, 3)),
-    title = "Askin Rate by AI Initiation",
-    x = "Condition",
-    y = "Asked Rate"
-  ) +
-  theme_minimal()
-p
-ggsave("plots/Askin_Rate_by_AI_Initiation.png", plot = p, width = 8, height = 7, dpi = 300, bg = "white")
-```
-
-
-
-## Combined plots with 4 columns
-
-``` {r}
-analyze <- function(successes, failures) {
-  n <- successes + failures
-  p <- successes / n
-  sd <- sqrt(p * (1 - p) / n)
-  ci_low <- p - 1.96 * sd
-  ci_high <- p + 1.96 * sd
-  return(list(
-    success_rate = p,
-    sd = sd,
-    ci_95 = c(ci_low, ci_high)
-  ))
-}
-
-library(Hmisc)
-analyse_wilson_Confidence <- function(successes, failures) {
-  n <- successes + failures
-  p <- successes / n
-  sd <- sqrt(p * (1 - p) / n)
-  ci <- binconf(x = successes, n = successes+failures, method = "wilson")
-  return(list(
-    success_rate = p,
-    sd = sd,
-    ci_lower = ci[2],
-    ci_upper = ci[3]
-  ))
-}
-
-
-
-
-successes <- c(
-  sum(all_data$Success[all_data$AI_Initiates == TRUE]),
-  sum(all_data$Success[all_data$AI_Initiates == FALSE]),
-  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE]),
-  sum(all_data$Success[all_data$AI_Initiates == FALSE]) - sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == TRUE])
-)
-
-failures <- c(
-  sum(all_data$Failure[all_data$AI_Initiates == TRUE]),
-  sum(all_data$Failure[all_data$AI_Initiates == FALSE]),
-  sum(all_data$Failure[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE]),
-  sum(all_data$Failure[all_data$AI_Initiates == FALSE]) + 
-  sum(all_data$Success[all_data$Asks_for_Help == 1])
-)
-
-# Create analyzed results
-ai_result <- analyse_wilson_Confidence(successes[1], failures[1])
-user_result <- analyse_wilson_Confidence(successes[2], failures[2])
-noASK_result <- analyse_wilson_Confidence(successes[3], failures[3])
-ask_failing_result <- analyse_wilson_Confidence(successes[4], failures[4])
-
-
-results_df <- data.frame(
-  Group = c("AI Initiated", "User Initiated", "w/o Asked for Help", "Asking is failing"),
-  Success_Rate = c(ai_result$success_rate, user_result$success_rate, 
-                   noASK_result$success_rate, ask_failing_result$success_rate),
-  CI_Low = c(ai_result$ci_lower, user_result$ci_lower, 
-             noASK_result$ci_lower, ask_failing_result$ci_lower),
-  CI_High = c(ai_result$ci_upper, user_result$ci_upper, 
-              noASK_result$ci_upper, ask_failing_result$ci_upper)
-)
-
-
-# Run Fisher's exact tests
-pvals <- c(
-  fisher.test(matrix(c(successes[1], failures[1], successes[2], failures[2]), nrow = 2))$p.value,
-  fisher.test(matrix(c(successes[1], failures[1], successes[3], failures[3]), nrow = 2))$p.value,
-  fisher.test(matrix(c(successes[1], failures[1], successes[4], failures[4]), nrow = 2))$p.value
-)
-fisher.test(matrix(c(successes[1], failures[1], successes[2], failures[2]), nrow = 2))
-# Format p-values for plotting
-p_labels <- c("",
-              paste0("p = ", signif(pvals[1], 3)),
-              paste0("p = ", signif(pvals[2], 3)),
-              paste0("p = ", signif(pvals[3], 3)))
-
-results_df$p_label <- p_labels
-
-results_df
-
-# Reorder rows manually: 1, 2, 4, 3
-results_df <- results_df[c(1, 2, 3, 4), ]
-
-results_df <- results_df %>%
-  mutate(Group = paste0(Group, "\n (successes: ", successes, " / failures: ", failures, ")"))
-results_df$Group <- factor(results_df$Group, levels = results_df$Group)
-
-
-p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
-  geom_point(size = 3) +
-  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
-  geom_text(aes(label = p_label, y = Success_Rate + 0.05), size = 3, vjust = -4) +
-  geom_hline(yintercept = 0.5, linetype = "solid", color = "red", size = 1.2)+
-  scale_y_continuous(limits = c(0, 1)) +
-  labs(
-    title = "Success Rate by AI Initiation",
-    subtitle = "Fisher's Exact Test p-values using Wilson score interval",
-    x = "Condition",
-    y = "Success Rate"
-  ) +
-  theme_minimal()
-
-p
-ggsave("plots/Success_Rate_by_AI_Initiation_combined.png", plot = p, width = 8, height = 7, dpi = 300, bg = "white")
-
-
-
-```
-
-## Odds ratio (NOT USED)
-```{r}
-
-
-get_fisher_ci <- function(success_a, failure_a, success_b, failure_b) {
-  table <- matrix(c(success_a, failure_a, success_b, failure_b), nrow = 2)
-  test <- fisher.test(table)
-  return(data.frame(
-    Comparison = paste0("AI vs ", deparse(substitute(success_b))),
-    odds_ratio = test$estimate,
-    CI_Low = test$conf.int[1],
-    CI_High = test$conf.int[2],
-    p_value = test$p.value
-  ))
-}
-
-
-# Use your current values
-successes <- c(
-  sum(all_data$Success[all_data$AI_Initiates == TRUE]),
-  sum(all_data$Success[all_data$AI_Initiates == FALSE]),
-  sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE]),
-  sum(all_data$Success[all_data$AI_Initiates == FALSE]) - sum(all_data$Success[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == TRUE])
-)
-
-failures <- c(
-  sum(all_data$Failure[all_data$AI_Initiates == TRUE]),
-  sum(all_data$Failure[all_data$AI_Initiates == FALSE]),
-  sum(all_data$Failure[all_data$AI_Initiates == FALSE & all_data$Asks_for_Help == FALSE]),
-  sum(all_data$Failure[all_data$AI_Initiates == FALSE]) + 
-  sum(all_data$Success[all_data$Asks_for_Help == 1])
-)
-
-# Run Fisher's test for comparisons with AI Initiated
-labels <- c("User Initiated", "User Initiated (No Help)", "User Initiated (Help Fails)")
-
-fisher_results <- do.call(rbind, lapply(2:4, function(i) {
-  test <- fisher.test(matrix(c(successes[1], failures[1], successes[i], failures[i]), nrow = 2))
-  data.frame(
-    Group = labels[i - 1],
-    odds_ratio = test$estimate,
-    CI_Low = test$conf.int[1],
-    CI_High = test$conf.int[2],
-    p_value = test$p.value
-  )
-}))
-
-ggplot(fisher_results, aes(x = Group, y = odds_ratio)) +
-  geom_point(size = 3) +
-  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.2) +
-  geom_text(aes(label = paste0("p = ", signif(p_value, 3))), vjust = -1.5) +
-  scale_y_log10() +  # Odds ratios should be plotted on log scale
-  labs(
-    title = "Fisher's Exact Test: Odds Ratios vs AI Initiated",
-    x = "Compared Group",
-    y = "Odds Ratio (log scale)"
-  ) +
-  theme_minimal()
-
-
-```
-
