@@ -358,8 +358,8 @@ p <- ggplot(plot_data, aes(x = EventIndex, y = 1, color = Outcome)) +
                                 "Failure User" = "tomato", "Failure AI" = "brown",
                                 "Unknown" = "grey")) +
   labs(
-    title = "Session Outcomes in Sequence",
-    x = "Session Index",
+    title = "Participant Outcomes in Sequence",
+    x = "Participant Index",
     y = "",
     color = "Outcome"
   ) +
@@ -604,6 +604,15 @@ pvals <- c(
   fisher.test(matrix(c(successes[1], failures[1], successes[4], failures[4]), nrow = 2))$p.value
 )
 fisher.test(matrix(c(successes[1], failures[1], successes[2], failures[2]), nrow = 2))
+
+Odds_Ratio <- c(
+  fisher.test(matrix(c(successes[1], failures[1], successes[1], failures[1]), nrow = 2))$estimate,
+  fisher.test(matrix(c(successes[1], failures[1], successes[2], failures[2]), nrow = 2))$estimate,
+  fisher.test(matrix(c(successes[1], failures[1], successes[3], failures[3]), nrow = 2))$estimate,
+  fisher.test(matrix(c(successes[1], failures[1], successes[4], failures[4]), nrow = 2))$estimate
+  )
+Odds_Ratio
+
 # Format p-values for plotting
 p_labels <- c(paste0("p = ", signif(pvals[1], 3)),
               paste0("p = ", signif(pvals[2], 3)),

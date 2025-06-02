@@ -1,0 +1,97 @@
+---
+title: "Turn Analysis"
+author: "Jgivsk, Skth, Rdha"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load and Explore Data
+
+```{r load-data}
+# Load necessary libraries
+library(tidyverse)
+
+# Load the data
+data <- read.csv("./data/user_turns_combined.csv")
+
+# Preview the data
+head(data)
+```
+
+```{r}
+## Generate Individual Plots for Each Participant
+# Group by Participant and Turn Number, calculate average sentence length
+participant_data <- data %>%
+  group_by(Participant, Turn.Number) %>%
+  summarise(Average.Sentence.Length = mean(Sentence.Length, na.rm = TRUE), .groups = "drop")
+
+# Create the faceted plot
+participant_plot <- ggplot(participant_data, aes(x = Turn.Number, y = Average.Sentence.Length)) +
+  geom_line(aes(group = Participant), color = "steelblue", linewidth = 1) +
+  geom_point(color = "tomato", size = 2) +
+  facet_wrap(~ Participant, scales = "free_y") +
+  labs(
+    title = "Average Sentence Length Across Turns by Participant",
+    x = "Turn Number",
+    y = "Average Sentence Length"
+  ) +
+  scale_x_continuous(breaks = unique(participant_data$Turn.Number)) +  # Gridlines for each turn
+  scale_y_continuous(breaks = function(x) pretty(x, n = 5)) + # ~5 nicely spaced whole-number ticks
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_line(color = "grey80"),
+    panel.background = element_rect(fill = "white", color = NA),
+    plot.background = element_rect(fill = "white", color = NA)
+  )
+
+participant_plot
+
+# Save with white background
+ggsave(
+  filename = "plots/average_sentence_length_per_participant.png",
+  plot = participant_plot,
+  width = 10,
+  height = 6,
+  dpi = 300,
+  bg = "white"  # ensures white background when saving
+)
+```
+
+## Calculate Average Sentence Length Per Turn
+
+```{r calculate-average}
+# Group by Turn Number and calculate the average sentence length
+average_sentence_length <- data %>%
+  group_by(Turn.Number) %>%
+  summarise(Average.Sentence.Length = mean(Sentence.Length, na.rm = TRUE), .groups = "drop") # Ensure ungrouped output
+
+# Preview the calculated averages
+average_sentence_length
+```
+
+## Plot Histogram of Average Sentence Length Per Turn
+
+```{r plot-histogram}
+# Create a histogram for average sentence length per turn
+ggplot(average_sentence_length, aes(x = factor(Turn.Number), y = Average.Sentence.Length)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(
+    title = "Average Sentence Length Per Turn",
+    x = "Turn Number",
+    y = "Average Sentence Length"
+  ) +
+  scale_x_discrete() +
+  theme_minimal()
+
+ggsave(
+  filename = "plots/average_sentence_length_histogram.png",
+  width = 10,
+  height = 5,
+  dpi = 300,
+  bg = "white"  # ensures white background when saving
+)
+```

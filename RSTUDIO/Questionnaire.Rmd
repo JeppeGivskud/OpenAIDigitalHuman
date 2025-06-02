@@ -314,13 +314,20 @@ plot_multiple_variables_boxplot <- function(data, columns, labels, title = "Boxp
       .groups = "drop"
     )
 
-  # T-tests per variable
+  # T-tests per variable (efficient and correct)
   t_test_results <- long_data %>%
     group_by(Variable) %>%
     summarise(
-      p_value = t.test(Score ~ Condition)$p.value,
+      test = list(t.test(Score ~ Condition)),
       .groups = "drop"
-    )
+    ) %>%
+    mutate(
+      p_value = sapply(test, function(x) x$p.value),
+      df = sapply(test, function(x) x$parameter),
+      t = sapply(test, function(x) x$statistic)
+    ) %>%
+    select(-test)
+
 
   # Label mapping
   label_df <- data.frame(Variable = levels(long_data$Variable), Label = labels)
@@ -331,11 +338,102 @@ plot_multiple_variables_boxplot <- function(data, columns, labels, title = "Boxp
     summarise(sd = mean(sd, na.rm = TRUE), .groups = "drop")
 
   long_data <- long_data %>%
-    left_join(t_test_results, by = "Variable") %>%
-    left_join(avg_sd_df, by = "Variable") %>%
-    left_join(label_df, by = "Variable") %>%
-    mutate(facet_label = paste0(Label, "\n(p = ", signif(p_value, 3), ")", "\n(sd = ", signif(sd, 3), ")"))
+  left_join(t_test_results, by = "Variable") %>%
+  left_join(avg_sd_df, by = "Variable") %>%
+  left_join(label_df, by = "Variable") %>%
+  mutate(facet_label = paste0(Label, " (p = ", signif(p_value, 3), ")", 
+                              "\n(df = ", round(df, 1),", t = ", round(t, 1), ")"))
+  
+  # Plot
+  p <- ggplot(long_data, aes(x = Condition, y = Score, fill = Condition)) +
+    geom_boxplot() +
+    geom_jitter(width = 0.15, alpha = 0.4) +
+    facet_wrap(~ facet_label, scales = "free_y") +
+    scale_fill_manual(values = c("AI" = "steelblue", "User" = "tomato")) +
+    labs(
+      title = title,
+      x = NULL,
+      y = "Score"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none", strip.text = element_text(size = 12))
 
+  # Save the plot
+  ggsave(filename = paste0("plots/", "Questionnaire_", gsub(" ", "_", title), ".png"), plot = p, width = 8, height = 8, dpi = 300, bg = "white")
+  
+  return(p)
+}
+
+```
+
+```{r}
+plot_multiple_variables_boxplot(
+  data = data,
+  columns = c(12, 19, 26, 27),
+  labels = c(
+    "Engagement",  
+    "Perceived Usefulness",  
+    "Perceived Ease of Use (PEU)",
+    "Intention to Use"
+  ),
+  title = "Scores for each construct boxplot"
+)
+
+
+```
+
+```{r}
+plot_multiple_variables_boxplot <- function(data, columns, labels, title = "Boxplots for Constructs") {
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+
+  # Prepare data
+  long_data <- data %>%
+    select(Condition, all_of(columns)) %>%
+    mutate(Condition = factor(Condition, levels = c("AI", "User"))) %>%
+    pivot_longer(-Condition, names_to = "Variable", values_to = "Score") %>%
+    mutate(Score = as.numeric(Score)) %>%
+    mutate(Variable = factor(Variable, levels = unique(Variable)))
+
+  # Compute stats per variable
+  stats_df <- long_data %>%
+    group_by(Variable, Condition) %>%
+    summarise(
+      mean = mean(Score, na.rm = TRUE),
+      sd = sd(Score, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  # T-tests per variable (efficient and correct)
+  t_test_results <- long_data %>%
+    group_by(Variable) %>%
+    summarise(
+      test = list(t.test(Score ~ Condition)),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      p_value = sapply(test, function(x) x$p.value),
+      df = sapply(test, function(x) x$parameter),
+      t = sapply(test, function(x) x$statistic)
+    ) %>%
+    select(-test)
+
+
+  # Label mapping
+  label_df <- data.frame(Variable = levels(long_data$Variable), Label = labels)
+
+  # Merge mean & SD (averaged across conditions) and other info
+  avg_sd_df <- stats_df %>%
+    group_by(Variable) %>%
+    summarise(sd = mean(sd, na.rm = TRUE), .groups = "drop")
+
+  long_data <- long_data %>%
+  left_join(t_test_results, by = "Variable") %>%
+  left_join(avg_sd_df, by = "Variable") %>%
+  left_join(label_df, by = "Variable") %>%
+  mutate(facet_label = paste0(Label))
+  
   # Plot
   p <- ggplot(long_data, aes(x = Condition, y = Score, fill = Condition)) +
     geom_boxplot() +
