@@ -84,8 +84,12 @@ session_data <- data.frame(
   Session_hours = session_hours
 )
 
-session_data
 
+# Add total failures and total successes
+session_data$Total_Successes <- sapply(data_list, function(df) sum(df$Success, na.rm = TRUE))
+session_data$Total_Failures <- sapply(data_list, function(df) sum(df$Failure, na.rm = TRUE))
+
+session_data
 ```
 
 ## Plots
@@ -347,6 +351,11 @@ plot_data <- all_data %>%
       TRUE ~ "Unknown"
     )
   )
+
+# Make a table with six rows one for each session and then hours, total failures and total successes
+
+
+
 
 p <- ggplot(plot_data, aes(x = EventIndex, y = 1, color = Outcome)) +
   geom_point(size = 3) +
