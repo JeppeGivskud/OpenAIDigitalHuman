@@ -124,6 +124,11 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(viridis)  # For color palette
+
 Questionnaire_plot <- function(data, questions, columns, title, title_offset) {
   
   # Prepare the data
@@ -168,8 +173,40 @@ Questionnaire_plot <- function(data, questions, columns, title, title_offset) {
     ) + 
     coord_flip()
   
+
+    # Cronbach alpha
+  library(psych)
+  # 1. Extract the relevant questionnaire items
+  questionnaire_items <- data[columns]
+  
+  # 2. Compute Cronbach's alpha with auto key check
+  overall_alpha <- psych::alpha(questionnaire_items, check.keys = FALSE)
+  
+  # 3. Compute alpha by condition (AI vs User), also with key check
+  alpha_by_condition <- data %>%
+    group_by(Condition) %>%
+    group_map(~ psych::alpha(.x[columns], check.keys = FALSE), .keep = TRUE)
+  
+  # 4. Print results
+  cat("overall Cronbach's alpha:\n")
+  print(overall_alpha$total$raw_alpha)
+  
+  cat("\n cronbach's alpha by condition:\n")
+  cat("AI:\n")
+  print(alpha_by_condition[[1]]$total$raw_alpha)
+  cat("User:\n")
+  print(alpha_by_condition[[2]]$total$raw_alpha)
+
+  alpha_text <- paste0("Overall Cronbach's α = ", round(overall_alpha$total$raw_alpha, 2),
+                     " | AI = ", round(alpha_by_condition[[1]]$total$raw_alpha, 2),
+                     " | User = ", round(alpha_by_condition[[2]]$total$raw_alpha, 2))
+
+  p <- p + labs(caption = alpha_text)
+
+  
   # Save plot
   ggsave(filename = paste0("plots/","Questionnaire_",title, ".png"), plot = p, width = 10, height = 6, dpi = 300, bg = "white")
+  
   
   # Return plot
   return(p)
@@ -194,6 +231,8 @@ my.labels <- c(
 
 # Call the function
 Questionnaire_plot(data, questions = my.labels, columns = 6:11, title = "Average Engagement per question by Condition",title_offset=0)
+
+
 ```
 
 ```{r}
@@ -212,7 +251,7 @@ my.labels <- c(
 )
 
 # Call the function
-Questionnaire_plot(data, questions = my.labels, columns = 6:11, title = "Perceived usefulness per question by Condition",title_offset=0)
+Questionnaire_plot(data, questions = my.labels, columns = 13:18, title = "Average Perceived usefulness (PU) per question by Condition",title_offset=0)
 ```
 
 ```{r}
@@ -231,7 +270,8 @@ my.labels <- c(
 )
 
 # Call the function
-Questionnaire_plot(data, questions = my.labels, columns = 6:11, title = " Perceived Ease of Use (PEU) per question by Condition",title_offset=-0.6)
+Questionnaire_plot(data, questions = my.labels, columns = 20:25, title = "Average Perceived Ease of Use (PEU) per question by Condition",title_offset=-0.6)
+
 ```
 
 ```{r}
@@ -289,7 +329,10 @@ my.labels <- c(
   
 )
 # Call the function
-Questionnaire_plot(data, questions = my.labels, columns = c(12,19,26,27), title = "Scores for each construct",title_offset = 0.4)
+Questionnaire_plot(data, questions = my.labels, columns = c(12,19,26,27), title = "Average Scores for each construct",title_offset = 0.4)
+
+
+
 ```
 ```{r}
 plot_multiple_variables_boxplot <- function(data, columns, labels, title = "Boxplots for Constructs") {
