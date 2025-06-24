@@ -48,6 +48,7 @@ source env/Scripts/activate
 For powershell
 ```
 env/Scripts/Activate
+python main.py true true true true
 ```
 
 You should see (env) in your terminal.

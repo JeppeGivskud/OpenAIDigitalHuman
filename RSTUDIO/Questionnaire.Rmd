@@ -174,13 +174,19 @@ Questionnaire_plot <- function(data, questions, columns, title, title_offset) {
     coord_flip()
   
 
-    # Cronbach alpha
+  # Cronbach alpha
   library(psych)
+  
   # 1. Extract the relevant questionnaire items
   questionnaire_items <- data[columns]
-  
-  # 2. Compute Cronbach's alpha with auto key check
+
+    # 2. Compute Cronbach's alpha with auto key check
   overall_alpha <- psych::alpha(questionnaire_items, check.keys = FALSE)
+  cor(questionnaire_items, use = "pairwise.complete.obs")  # Compute correlation matrix
+  
+  # Correlation matrix
+  cor_matrix <- cor(questionnaire_items, use = "pairwise.complete.obs")
+  cor_matrix_rounded <- round(cor_matrix, 2)
   
   # 3. Compute alpha by condition (AI vs User), also with key check
   alpha_by_condition <- data %>%
@@ -207,7 +213,28 @@ Questionnaire_plot <- function(data, questions, columns, title, title_offset) {
   # Save plot
   ggsave(filename = paste0("plots/","Questionnaire_",title, ".png"), plot = p, width = 10, height = 6, dpi = 300, bg = "white")
   
+  # 7. Split data into AI and User
+  data_ai <- data %>% filter(Condition == "AI")
+  data_user <- data %>% filter(Condition == "User")
   
+  items_ai <- data_ai[columns]
+  items_user <- data_user[columns]
+  
+  # 8. Compute correlation matrices by condition
+  cor_ai <- round(cor(items_ai, use = "pairwise.complete.obs"), 2)
+  cor_user <- round(cor(items_user, use = "pairwise.complete.obs"), 2)
+  
+  # 9. Print correlation tables (ready to copy into PowerPoint)
+  cat("\n🔷 Correlation matrix – AI initiated:\n")
+  print(kable(cor_ai, format = "markdown"))
+  
+  cat("\n🔶 Correlation matrix – User initiated:\n")
+  print(kable(cor_user, format = "markdown"))
+  
+  # Optional: Export as CSV for use in Excel/PowerPoint
+  write.csv(cor_ai, paste0(title,"correlation_matrix_AI.csv"))
+  write.csv(cor_user,  paste0(title, "correlation_matrix_User.csv"))
+
   # Return plot
   return(p)
 }
@@ -231,7 +258,6 @@ my.labels <- c(
 
 # Call the function
 Questionnaire_plot(data, questions = my.labels, columns = 6:11, title = "Average Engagement per question by Condition",title_offset=0)
-
 
 ```
 

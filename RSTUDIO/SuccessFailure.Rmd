@@ -771,6 +771,113 @@ p
 ggsave("plots/Askin_Rate_by_AI_Initiation.png", plot = p, width = 8, height = 6, dpi = 300, bg = "white")
 ```
 
+
+### Only analysis of setup 4
+
+```{r}
+library(Hmisc)
+analyse_wilson_Confidence <- function(successes, failures) {
+  n <- successes + failures
+  p <- successes / n
+  sd <- sqrt(p * (1 - p) / n)
+  ci <- binconf(x = successes, n = successes+failures, method = "wilson")
+  return(list(
+    success_rate = p,
+    sd = sd,
+    ci_lower = ci[2],
+    ci_upper = ci[3]
+  ))
+}
+library(dplyr)
+library(lubridate)
+
+# Convert if needed
+all_data$Timestamp <- ymd_hms(all_data$Timestamp)
+
+# Filter for only the date 2025-05-13
+all_data_2025_05_13 <- all_data %>%
+  filter(as.Date(Timestamp) == as.Date("2025-05-13"))
+
+# Summarize data into success and failures
+successes <- c(
+  sum(all_data_2025_05_13$Success[all_data_2025_05_13$AI_Initiates == TRUE]), 
+  sum(all_data_2025_05_13$Success[all_data_2025_05_13$AI_Initiates == FALSE])
+  )
+
+failures <- c(
+  sum(all_data_2025_05_13$Failure[all_data_2025_05_13$AI_Initiates == TRUE]), 
+  sum(all_data_2025_05_13$Failure[all_data_2025_05_13$AI_Initiates == FALSE])
+  )
+
+ai_result <- analyse_wilson_Confidence(successes[1], failures[1])
+user_result <- analyse_wilson_Confidence(successes[2], failures[2])
+
+# Create a data frame for the results
+results_df <- data.frame(
+  Group = c("AI Initiated", "User Initiated"),
+  Successes = successes,
+  Failures = failures,
+  Success_Rate = c(ai_result$success_rate, user_result$success_rate),
+  SD = c(ai_result$sd, user_result$sd),
+  CI_Low = c(ai_result$ci_lower, user_result$ci_lower),
+  CI_High = c(ai_result$ci_upper, user_result$ci_upper)
+)
+
+
+# Print the results
+print(results_df)
+
+# Fishers test
+# Filter only the two groups
+contingency_data <- results_df %>%
+  filter(Group %in% c("AI Initiated", "User Initiated")) %>%
+  select(Group, Successes, Failures)
+
+# Create matrix for Fisher's test
+contingency_table <- matrix(
+  c(
+    contingency_data$Successes[contingency_data$Group == "AI Initiated"],
+    contingency_data$Failures[contingency_data$Group == "AI Initiated"],
+    contingency_data$Successes[contingency_data$Group == "User Initiated"],
+    contingency_data$Failures[contingency_data$Group == "User Initiated"]
+  ),
+  nrow = 2,
+  byrow = TRUE
+)
+
+rownames(contingency_table) <- c("Successes", "Failures")
+colnames(contingency_table) <- c("AI Initiated", "User Initiated")
+
+print(contingency_table)
+
+# Perform Fisher's exact test
+fisher_test_result <- fisher.test(contingency_table, alternative = "two.sided")
+print(fisher_test_result)
+
+results_df <- results_df %>%
+  mutate(Group = paste0(Group, "\n (successes: ", successes, " / failures: ", failures, ")"))
+results_df$Group <- factor(results_df$Group, levels = results_df$Group)
+
+
+
+# plot the results with confidence interval
+p <- ggplot(results_df, aes(x = Group, y = Success_Rate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = CI_Low, ymax = CI_High), width = 0.15) +
+  geom_hline(yintercept = 0.5, linetype = "solid", color = "red", size = 1.2) +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(
+    subtitle = paste0("Fisher's Exact Test (AI vs User) p = ", signif(fisher_test_result$p.value, 3)),
+    title = "Success Rate by AI Initiation",
+    x = "Condition",
+    y = "Probability of success"
+  ) +
+  theme_minimal()
+p
+ggsave("plots/Success_Rate_by_AI_Initiation_Setup4.png", plot = p, width = 8, height = 6, dpi = 300, bg = "white")
+
+```
+
 # Not used
 
 
